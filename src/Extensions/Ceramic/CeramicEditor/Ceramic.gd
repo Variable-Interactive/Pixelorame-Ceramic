@@ -59,7 +59,7 @@ var was_closed_by_notification := false
 @onready var log_viewer: RichTextLabel = %LogViewer
 @onready var diagnostics_label: RichTextLabel = %Diagnostics
 @onready var script_name_edit: LineEdit = %ScriptNameEdit
-@onready var godot_path: LineEdit = %GodotPath
+@onready var godot_path_edit: LineEdit = %GodotPath
 @onready var editor_container: VBoxContainer = %EditorContainer
 @onready var output: HBoxContainer = %Output
 @onready var status_info: Label = %StatusInfo
@@ -71,11 +71,14 @@ var was_closed_by_notification := false
 
 func _ready() -> void:
 	extension_api = get_node_or_null("/root/ExtensionsApi")  # Accessing the Api
-	try_connect_lsp()
 	if extension_api:
 		extension_api.general.get_global().pixelorama_about_to_close.connect(_exit_tree)
 		var config: ConfigFile = extension_api.general.get_config_file()
 		var data: Dictionary = config.get_value("Ceramic", "data", {})
+		var godot_path: String = config.get_value("Ceramic", "godot", "")
+		if not godot_path.is_empty() and is_godot_present(godot_path):
+			godot_path_edit.text = godot_path
+		try_connect_lsp()
 		if data.is_empty():
 			create_virtual_script()
 		else:
@@ -111,6 +114,7 @@ func _exit_tree() -> void:
 	if extension_api:
 		var config: ConfigFile = extension_api.general.get_config_file()
 		config.set_value("Ceramic", "data", serialize())
+		config.set_value("Ceramic", "godot", godot_path_edit.text)
 	disconnect_lsp_stream()
 
 
@@ -151,15 +155,20 @@ func _ping_timer_timeout() -> void:
 func _text_changed() -> void:
 	var editor: CodeEdit = editors.get(current_virtual_script)
 	if editor:
-		diagnostic_timer.timeout.connect(
-			func ():
-				diagnostics_label.visible = false
-				diagnostics_label.set_meta("type", Diagnostic.NONE)
-				for line in editor.get_line_count():
-					editor.set_line_background_color(line, Color(0, 0, 0, 0))
-				,CONNECT_ONE_SHOT
-			)
-		diagnostic_timer.start()
+		if diagnostics_label.visible:
+			diagnostics_label.visible = false
+			diagnostics_label.set_meta("type", Diagnostic.NONE)
+			for line in editor.get_line_count():
+				editor.set_line_background_color(line, Color(0, 0, 0, 0))
+		#diagnostic_timer.timeout.connect(
+			#func ():
+				#diagnostics_label.visible = false
+				#diagnostics_label.set_meta("type", Diagnostic.NONE)
+				#for line in editor.get_line_count():
+					#editor.set_line_background_color(line, Color(0, 0, 0, 0))
+				#,CONNECT_ONE_SHOT
+			#)
+		#diagnostic_timer.start()
 
 		if current_virtual_script.source_code != editor.text:
 			current_virtual_script.source_code = editor.text
@@ -177,7 +186,8 @@ func _on_run_script_pressed() -> void:
 
 
 func _on_godot_path_text_changed(file_path: String) -> void:
-	if lsp_process != -1 and FileAccess.file_exists(file_path):
+	if not is_stream_connected and is_godot_present(file_path.strip_edges()):
+		godot_path_edit.text = file_path.strip_edges()
 		try_connect_lsp()
 
 
@@ -235,7 +245,7 @@ func _on_diagnostic_timer_timeout(message: String, line: int) -> void:
 		return
 	for l in editor.get_line_count():
 		editor.set_line_background_color(l, Color(0, 0, 0, 0))
-	if line > editor.get_line_count() or "Error while getting cache for script" in message:
+	if line > editor.get_line_count():
 		return
 	diagnostics_label.text = message
 	diagnostics_label.visible = true
@@ -262,7 +272,8 @@ func get_script_status(virtual_script: VirtualScript):
 
 
 func update_script_status(virtual_script: VirtualScript, update_name := true):
-	status_info.text = get_script_status(virtual_script)
+	if virtual_script == current_virtual_script:
+		status_info.text = get_script_status(virtual_script)
 	match status_info.text:
 		"Running":
 			virtual_script.was_running = true
@@ -277,7 +288,7 @@ func update_script_status(virtual_script: VirtualScript, update_name := true):
 		else:
 			script_list.set_item_text(
 				idx,
-				virtual_script.name + "(%s)" % get_script_status(virtual_script)
+				virtual_script.name + " (%s)" % get_script_status(virtual_script)
 			)
 
 
@@ -308,6 +319,7 @@ func ensure_editor_exists(virtual_script: VirtualScript):
 
 
 func remove_virtual_script(virtual_script: VirtualScript):
+	stop_script(virtual_script)
 	var old_idx = virtual_scripts.find(virtual_script)
 	virtual_scripts.erase(virtual_script)
 	var editor: CodeEdit = editors.get(virtual_script, null)
@@ -343,21 +355,25 @@ func refresh_script_list():
 			script_list.select(script_idx)
 
 
-func stop_script(virtual_script: VirtualScript):
+func stop_script(virtual_script: VirtualScript) -> bool:
 	var script_id := virtual_script.get_instance_id()
 	var old_executor: Node = activators.find_child(str(script_id), false, false)
+	var had_previous_instance := false
 	if old_executor:
+		had_previous_instance = true
 		old_executor.remove_from_group(ACTIVATOR_GROUP)
 		old_executor.queue_free()
 	update_script_status(virtual_script)
+	return had_previous_instance
 
 
 func run_code(virtual_script: VirtualScript) -> void:
-	stop_script(virtual_script)
+	var had_previous_instance = stop_script(virtual_script)
 
-	# Wait for the previous script to be unloaded
-	await get_tree().process_frame
-	await get_tree().process_frame
+	if had_previous_instance:
+		# Wait for the previous script to be unloaded
+		await get_tree().process_frame
+		await get_tree().process_frame
 
 	if (
 		diagnostics_label.visible
@@ -403,14 +419,23 @@ func handle_diagnostic(data: Dictionary):
 		var warn_line := -1
 		var last_err := ""
 		var err_line := -1
+		var editor = editors[current_virtual_script]
 		for diag: Dictionary in diagnostics:
 			match diag.get("code", 0):
 				-1: # Error
+					var err: String = diag.get("message", 0)
+					if "Error while getting cache for script" in err:
+						# Ignore this error
+						continue
 					last_err = diag.get("message", 0)
 					err_line = diag.get("range", {}).get("start", {}).get("line", -1)
 				_: # Warning
+					var w_line: int = diag.get("range", {}).get("start", {}).get("line", -1)
+					if w_line > editor.get_line_count():
+						# Ignore warnings related to api
+						continue
 					last_warn = diag.get("message", 0)
-					warn_line = diag.get("range", {}).get("start", {}).get("line", -1)
+					warn_line = warn_line
 
 		if not last_err.strip_edges().is_empty():
 			throw_error(last_err, err_line)
@@ -451,13 +476,13 @@ func try_connect_lsp() -> void:
 	is_stream_connected = false
 
 	# Connect to LSP server
-	if is_godot_present(godot_path.text):
+	if is_godot_present(godot_path_edit.text):
 		var args = OS.get_cmdline_user_args()
 		if "--child" in args:
 			return  # This is the headless/LSP instance so don't spawn again
 
 		lsp_process = OS.create_process(
-			godot_path.text, [
+			godot_path_edit.text, [
 				"--headless",
 				DummyProject.create_project(temp_path),
 				"++",
@@ -472,8 +497,9 @@ func try_connect_lsp() -> void:
 		else:
 			log_output("Could not create TCP server...")
 	else:
-		godot_path.text = ""
+		godot_path_edit.text = ""
 		log_output("Godot not found, code suggestions can not be performed")
+		disconnect_lsp_stream()
 
 
 func _on_godot_startup_timer_timeout() -> void:
@@ -554,7 +580,7 @@ func _on_connected_to_lsp_server():
 	var request = json_rpc.make_request(
 		"initialize", {
 			"processId": null,
-			"rootUri": "file:///%s" % godot_path.text,
+			"rootUri": "file:///%s" % godot_path_edit.text,
 			"capabilities": {}
 		},
 		INITIALIZATION
@@ -665,9 +691,9 @@ func send_autocomplete_request() -> void:
 
 
 func _on_file_browse_pressed() -> void:
-	if not godot_path.text.strip_edges().is_empty():
-		if FileAccess.file_exists(godot_path.text.strip_edges()):
-			var old_path = godot_path.text.strip_edges()
+	if not godot_path_edit.text.strip_edges().is_empty():
+		if FileAccess.file_exists(godot_path_edit.text.strip_edges()):
+			var old_path = godot_path_edit.text.strip_edges()
 			executable_chooser.current_file = old_path
 			executable_chooser.current_dir = old_path.get_base_dir()
 	executable_chooser.popup_centered()
@@ -675,4 +701,6 @@ func _on_file_browse_pressed() -> void:
 
 func _on_executable_chooser_file_selected(path: String) -> void:
 	if is_godot_present(path):
-		godot_path.text = path
+		godot_path_edit.text = path
+		if not is_stream_connected:
+			try_connect_lsp()

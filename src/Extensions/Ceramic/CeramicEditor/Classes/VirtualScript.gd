@@ -5,10 +5,18 @@ var name: String = "New Script"
 var was_running: bool = false
 var source_code: String = """extends Node
 
-# This script acts as a setup for the extension
+# NOTE: This script is meant to be run through this code editor.
+# INFO: You don't have to save the scripts, they are saved in Pixelorama's
+# configuration file.
+
+
 func _enter_tree() -> void:
+	# INFO: To access api, simply type ExtensionsApi (autocomplete is supported through LSP)
 	# See https://pixelorama.org/extension_system/extension_api for the API docs.
-	ExtensionsApi.get_api_version()
+	# or https://pixelorama.org/extension_system/extension_examples for Examples.
+
+	print(ExtensionsApi.get_api_version())
+
 
 func _exit_tree() -> void:  # Extension is being uninstalled or disabled
 	# remember to remove things that you added using this extension
