@@ -160,15 +160,6 @@ func _text_changed() -> void:
 			diagnostics_label.set_meta("type", Diagnostic.NONE)
 			for line in editor.get_line_count():
 				editor.set_line_background_color(line, Color(0, 0, 0, 0))
-		#diagnostic_timer.timeout.connect(
-			#func ():
-				#diagnostics_label.visible = false
-				#diagnostics_label.set_meta("type", Diagnostic.NONE)
-				#for line in editor.get_line_count():
-					#editor.set_line_background_color(line, Color(0, 0, 0, 0))
-				#,CONNECT_ONE_SHOT
-			#)
-		#diagnostic_timer.start()
 
 		if current_virtual_script.source_code != editor.text:
 			current_virtual_script.source_code = editor.text
@@ -524,6 +515,7 @@ func disconnect_lsp_stream() -> void:
 		log_output("Killing stream at PID: %s" % str(lsp_process))
 		OS.kill(lsp_process)
 		lsp_process = -1
+	godot_connect_attempt = 0
 
 
 func make_request(request: Dictionary) -> void:
