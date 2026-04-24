@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://bwayu12y30h5p"]
+
+[node name="Editor" type="CodeEdit" unique_id=1705643067]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+text = "extends Node
+
+@onready var extension_api: Node  # Variable for keeping reference to the Api
+
+# This script acts as a setup for the extension
+func _enter_tree() -> void:
+	# See https://pixelorama.org/extension_system/extension_api for the API docs.
+	extension_api = get_node_or_null(\"/root/ExtensionsApi\")  # Accessing the Api
+	
+func _exit_tree() -> void:  # Extension is being uninstalled or disabled
+	# remember to remove things that you added using this extension
+	pass"
+caret_blink = true
+draw_tabs = true
+gutters_draw_line_numbers = true
+code_completion_enabled = true
+indent_automatic = true
+auto_brace_completion_enabled = true
+auto_brace_completion_highlight_matching = true

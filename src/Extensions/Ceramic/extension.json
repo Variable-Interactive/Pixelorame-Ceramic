@@ -1,0 +1,10 @@
+{
+"author": "Variabl",
+"description": "Ceramic",
+"display_name": "Ceramic",
+"license": "MIT",
+"name": "Ceramic",
+"nodes": ["Main.tscn"],
+"supported_api_versions": [8],
+"version": "0.1"
+}

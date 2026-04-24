@@ -1,0 +1,282 @@
+[gd_scene format=3 uid="uid://pp5t8m4vqvbm"]
+
+[ext_resource type="Script" uid="uid://cftomcgq3l6eg" path="res://src/Extensions/Ceramic/CeramicEditor/Ceramic.gd" id="1_sniaa"]
+[ext_resource type="Texture2D" uid="uid://b22gtlomrhjnj" path="res://src/Extensions/Ceramic/CeramicEditor/Icons/FileBrowse.svg" id="2_sniaa"]
+[ext_resource type="Texture2D" uid="uid://bsqhqw76mc0fu" path="res://src/Extensions/Ceramic/CeramicEditor/Icons/Clear.svg" id="3_1fqd4"]
+[ext_resource type="Texture2D" uid="uid://8er4feapwlhg" path="res://src/Extensions/Ceramic/CeramicEditor/Icons/Play.svg" id="3_vit66"]
+[ext_resource type="Texture2D" uid="uid://d1avxawxh35qi" path="res://src/Extensions/Ceramic/CeramicEditor/Icons/Stop.svg" id="4_y00kv"]
+[ext_resource type="Texture2D" uid="uid://da7c8kqhnbwjd" path="res://src/Extensions/Ceramic/CeramicEditor/Icons/Copy.svg" id="4_yr72p"]
+
+[node name="Ceramic" type="PanelContainer" unique_id=2062398958]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sniaa")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=849765823]
+layout_mode = 2
+
+[node name="GodotBar" type="HBoxContainer" parent="VBoxContainer" unique_id=1422330662]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/GodotBar" unique_id=147974062]
+layout_mode = 2
+text = "Godot Path:"
+
+[node name="GodotPath" type="LineEdit" parent="VBoxContainer/GodotBar" unique_id=1789654650]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "/home/undefined/Softwares/Godot/Godot_stable.x86_64"
+placeholder_text = "Enter Godot Path..."
+
+[node name="FileBrowse" type="Button" parent="VBoxContainer/GodotBar" unique_id=138463119]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/GodotBar/FileBrowse" unique_id=2108888870]
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_sniaa")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer" unique_id=1132037077]
+layout_mode = 2
+
+[node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer" unique_id=965524034]
+layout_mode = 2
+size_flags_vertical = 3
+split_offsets = PackedInt32Array(108)
+split_offset = 108
+
+[node name="ScriptTabs" type="VBoxContainer" parent="VBoxContainer/HSplitContainer" unique_id=1631654159]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/ScriptTabs" unique_id=1164006299]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer" unique_id=1986065594]
+layout_mode = 2
+theme_type_variation = &"HeaderSmall"
+text = "Scripts:"
+
+[node name="NewScriptButton" type="Button" parent="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer" unique_id=216061859]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 10
+text = "+"
+
+[node name="ScriptList" type="ItemList" parent="VBoxContainer/HSplitContainer/ScriptTabs" unique_id=1693389640]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer" unique_id=1534329865]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=529083312]
+layout_mode = 2
+vertical_scroll_mode = 0
+
+[node name="ScriptInfoBar" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer" unique_id=2051248272]
+unique_name_in_owner = true
+texture_filter = 1
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameLabel" type="Label" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=966679491]
+layout_mode = 2
+text = "Name:"
+
+[node name="ScriptNameEdit" type="LineEdit" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=598100185]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+placeholder_text = "Script Name"
+
+[node name="DeleteScript" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=1588536273]
+layout_mode = 2
+text = "Delete Script"
+
+[node name="Control" type="Control" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=445189425]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=743220578]
+layout_mode = 2
+text = "Status:"
+
+[node name="StatusInfo" type="Label" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=773236179]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RunScript" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=365820365]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar/RunScript" unique_id=1013859074]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_vit66")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StopScript" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=104085338]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 8
+
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar/StopScript" unique_id=1055115226]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_y00kv")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VSplitContainer" type="VSplitContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=2090798466]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer" unique_id=422031320]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EditorContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/VBoxContainer" unique_id=1649605962]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Diagnostics" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/VBoxContainer" unique_id=1973655765]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+
+[node name="Output" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer" unique_id=1628876127]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LogViewer" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=653541280]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=119596008]
+layout_mode = 2
+
+[node name="LogButtons" type="GridContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=1071723266]
+texture_filter = 1
+layout_mode = 2
+columns = 2
+
+[node name="ClearLog" type="TextureButton" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons" unique_id=284808276]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+tooltip_text = "Clear Log"
+texture_normal = ExtResource("3_1fqd4")
+stretch_mode = 5
+
+[node name="CopyLog" type="TextureButton" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons" unique_id=1486174987]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+tooltip_text = "Copy Log"
+texture_normal = ExtResource("4_yr72p")
+stretch_mode = 5
+
+[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=135731652]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=256413398]
+layout_mode = 2
+
+[node name="BottomBar" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=1227358673]
+layout_mode = 2
+alignment = 2
+
+[node name="LogButton" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar" unique_id=1056052359]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Hide Output"
+
+[node name="Activators" type="Node" parent="." unique_id=1396606233]
+unique_name_in_owner = true
+
+[node name="CeramicDialogs" type="Control" parent="." unique_id=2365435]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ExecutableChooser" type="FileDialog" parent="CeramicDialogs" unique_id=664908072]
+unique_name_in_owner = true
+oversampling_override = 1.0
+title = "Choose Godot Executable"
+mode_overrides_title = false
+file_mode = 0
+access = 2
+folder_creation_enabled = false
+overwrite_warning_enabled = false
+deleting_enabled = false
+
+[node name="GodotStartupTimer" type="Timer" parent="." unique_id=1923036486]
+unique_name_in_owner = true
+wait_time = 0.5
+one_shot = true
+
+[node name="PacketScanTimer" type="Timer" parent="." unique_id=606024549]
+unique_name_in_owner = true
+wait_time = 0.3
+autostart = true
+
+[node name="DiagnosticTimer" type="Timer" parent="." unique_id=769619502]
+unique_name_in_owner = true
+wait_time = 0.3
+one_shot = true
+
+[connection signal="text_changed" from="VBoxContainer/GodotBar/GodotPath" to="." method="_on_godot_path_text_changed"]
+[connection signal="pressed" from="VBoxContainer/GodotBar/FileBrowse" to="." method="_on_file_browse_pressed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer/NewScriptButton" to="." method="_on_new_script_button_pressed"]
+[connection signal="item_selected" from="VBoxContainer/HSplitContainer/ScriptTabs/ScriptList" to="." method="_on_script_list_item_selected"]
+[connection signal="text_changed" from="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar/ScriptNameEdit" to="." method="_on_script_name_edit_text_changed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar/DeleteScript" to="." method="_on_delete_script_pressed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar/RunScript" to="." method="_on_run_script_pressed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/ScrollContainer/ScriptInfoBar/StopScript" to="." method="_on_stop_script_pressed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons/ClearLog" to="." method="_on_clear_log_pressed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons/CopyLog" to="." method="_on_copy_log_pressed"]
+[connection signal="toggled" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/LogButton" to="." method="_on_log_button_toggled"]
+[connection signal="file_selected" from="CeramicDialogs/ExecutableChooser" to="." method="_on_executable_chooser_file_selected"]
+[connection signal="timeout" from="GodotStartupTimer" to="." method="_on_godot_startup_timer_timeout"]
+[connection signal="timeout" from="PacketScanTimer" to="." method="_ping_timer_timeout"]
