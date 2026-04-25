@@ -6,7 +6,7 @@ var was_running: bool = false
 var source_code: String = """extends Node
 
 # NOTE: This script is meant to be run through this code editor.
-# INFO: You don't have to save the scripts, they are saved in Pixelorama's
+# INFO: You don't have to save the scripts, they are auto saved in a
 # configuration file.
 
 

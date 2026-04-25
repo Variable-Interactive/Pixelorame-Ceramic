@@ -426,7 +426,6 @@ func handle_signature(data: Dictionary):
 	if not editor:
 		return
 	for signature: Dictionary in signatures:
-		print(signature)
 		for key in signature.keys():
 			editor.show_signature(signature["label"], signature["documentation"]["value"])
 
