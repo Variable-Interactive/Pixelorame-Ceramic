@@ -5,6 +5,7 @@ const HOST := "127.0.0.1"
 ## This is the default values for godot editor settings.
 const PORT: int = 6005
 
+const CERAMIC_CONFIG_PATH := "user://ceramic_data.ini"
 const CONNECTION_MAX_ATTEMPTS: int = 50
 const ACTIVATOR_GROUP := "Activators"
 const EDITOR_SCENE := preload("res://src/Extensions/Ceramic/CeramicEditor/Nodes/Editor.tscn")
@@ -25,6 +26,8 @@ enum {
 
 signal connected()
 signal packet_received(packet:PackedByteArray)
+
+var ceramic_data := ConfigFile.new()
 
 var temp_path := OS.get_temp_dir().path_join("ceramic_temp")
 var virtual_scripts: Array[VirtualScript] = []
@@ -73,9 +76,12 @@ func _ready() -> void:
 	extension_api = get_node_or_null("/root/ExtensionsApi")  # Accessing the Api
 	if extension_api:
 		extension_api.general.get_global().pixelorama_about_to_close.connect(_exit_tree)
-		var config: ConfigFile = extension_api.general.get_config_file()
-		var data: Dictionary = config.get_value("Ceramic", "data", {})
-		var godot_path: String = config.get_value("Ceramic", "godot", "")
+
+	var err := ceramic_data.load(CERAMIC_CONFIG_PATH)
+	if err == OK:
+		#var config: ConfigFile = extension_api.general.get_config_file()
+		var data: Dictionary = ceramic_data.get_value("Ceramic", "data", {})
+		var godot_path: String = ceramic_data.get_value("Ceramic", "godot", "")
 		if not godot_path.is_empty() and is_godot_present(godot_path):
 			godot_path_edit.text = godot_path
 		try_connect_lsp()
@@ -86,6 +92,12 @@ func _ready() -> void:
 	else:
 		try_connect_lsp()
 		create_virtual_script()
+
+
+func save_data() -> void:
+	ceramic_data.set_value("Ceramic", "data", serialize())
+	ceramic_data.set_value("Ceramic", "godot", godot_path_edit.text)
+	ceramic_data.save(CERAMIC_CONFIG_PATH)
 
 
 func serialize():
@@ -113,9 +125,7 @@ func _notification(what):
 
 func _exit_tree() -> void:
 	if extension_api:
-		var config: ConfigFile = extension_api.general.get_config_file()
-		config.set_value("Ceramic", "data", serialize())
-		config.set_value("Ceramic", "godot", godot_path_edit.text)
+		save_data()
 	disconnect_lsp_stream()
 
 
@@ -175,6 +185,7 @@ func _text_changed() -> void:
 
 
 func _on_run_script_pressed() -> void:
+	save_data()
 	run_code(current_virtual_script)
 
 

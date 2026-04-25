@@ -23,9 +23,9 @@ unique_name_in_owner = true
 disable_3d = true
 handle_input_locally = false
 oversampling_override = 1.0
-size = Vector2i(582, 131)
+size = Vector2i(582, 150)
 mouse_passthrough_polygon = PackedVector2Array(0, 0)
-min_size = Vector2i(10, 100)
+min_size = Vector2i(10, 150)
 
 [node name="PanelContainer" type="PanelContainer" parent="SignaturePopup" unique_id=646040507]
 self_modulate = Color(0.601223, 0.601223, 0.60122293, 1)

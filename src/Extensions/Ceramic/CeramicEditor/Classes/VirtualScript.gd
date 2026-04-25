@@ -14,7 +14,7 @@ func _enter_tree() -> void:
 	# INFO: To access api, simply type ExtensionsApi (autocomplete is supported through LSP)
 	# See https://pixelorama.org/extension_system/extension_api for the API docs.
 	# or https://pixelorama.org/extension_system/extension_examples for Examples.
-	ExtensionsApi.general.get_pixelorama_version(sdad)
+
 	print(ExtensionsApi.get_api_version())
 
 
