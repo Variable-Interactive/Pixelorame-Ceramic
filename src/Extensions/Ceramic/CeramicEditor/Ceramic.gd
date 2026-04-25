@@ -20,7 +20,6 @@ enum {
 	FILE_CHANGED,
 	COMPLETION_REQUESTED,
 	SIGNATURE_REQUESTED,
-	DIAGNOSTICS_REQUESTED,
 	UNKNOWN
 }
 
@@ -210,6 +209,7 @@ func _on_packet_recieved(packet: PackedByteArray):
 						INITIALIZATION:
 							was_connected = true
 							log_output("Initialization Successful, LSP is ready.")
+							send_autocomplete_request()
 						COMPLETION_REQUESTED:
 							last_completion_list = converted
 						SIGNATURE_REQUESTED:
@@ -254,7 +254,7 @@ func _on_diagnostic_timer_timeout(message: String, line: int) -> void:
 		return
 	for l in editor.get_line_count():
 		editor.set_line_background_color(l, Color(0, 0, 0, 0))
-	if line >= editor.get_line_count():
+	if line < 0 or line >= editor.get_line_count():
 		return
 	diagnostics_label.text = message
 	diagnostics_label.visible = true
