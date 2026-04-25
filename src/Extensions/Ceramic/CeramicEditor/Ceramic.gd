@@ -236,7 +236,7 @@ func _on_diagnostic_timer_timeout(message: String, line: int) -> void:
 		return
 	for l in editor.get_line_count():
 		editor.set_line_background_color(l, Color(0, 0, 0, 0))
-	if line > editor.get_line_count():
+	if line >= editor.get_line_count():
 		return
 	diagnostics_label.text = message
 	diagnostics_label.visible = true
@@ -422,7 +422,7 @@ func handle_diagnostic(data: Dictionary):
 					err_line = diag.get("range", {}).get("start", {}).get("line", -1)
 				_: # Warning
 					var w_line: int = diag.get("range", {}).get("start", {}).get("line", -1)
-					if w_line > editor.get_line_count():
+					if w_line >= editor.get_line_count():
 						# Ignore warnings related to api
 						continue
 					last_warn = diag.get("message", 0)

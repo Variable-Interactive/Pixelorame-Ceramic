@@ -9,8 +9,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_vertical = 3
-text = "func (value): 
-	s.print(ExtensionsApi.get_api_version())"
 caret_blink = true
 draw_tabs = true
 gutters_draw_line_numbers = true
