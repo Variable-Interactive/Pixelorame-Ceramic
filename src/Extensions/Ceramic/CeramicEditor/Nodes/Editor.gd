@@ -10,6 +10,7 @@ func _ready() -> void:
 class GDScriptHighlight:
 	extends CodeHighlighter
 
+	const ANNOTATION_COLOR := Color("ffb373")
 	const COMMENT_COLOR := Color("ffffff80")
 	const FUNCTION_COLOR := Color("57b3ff")
 	const FUNCTION_DEFINE_COLOR := Color("66e6ff")
@@ -45,12 +46,50 @@ class GDScriptHighlight:
 	]
 
 	const GDSCRIPT_TYPES := [
-		"int", "float", "bool", "void", "String",
-		"Vector2", "Vector3", "Vector4",
-		"Color", "Array", "Dictionary",
-		"Node", "Node2D", "Node3D",
-		"Resource", "Object",
-		"ExtensionsApi"
+		# Variant core types
+		"null", "bool", "int", "float", "String", "StringName",
+		"Vector2", "Vector2i", "Vector3", "Vector3i", "Vector4", "Vector4i",
+		"Rect2", "Rect2i",
+		"Transform2D", "Transform3D",
+		"Plane", "Quaternion", "AABB", "Basis", "Projection",
+		"Color",
+		"NodePath", "RID", "Object", "Callable", "Signal",
+		"Dictionary", "Array",
+		"PackedByteArray", "PackedInt32Array", "PackedInt64Array",
+		"PackedFloat32Array", "PackedFloat64Array",
+		"PackedStringArray",
+		"PackedVector2Array", "PackedVector3Array", "PackedColorArray",
+
+		# Engine base classes
+		"Object", "RefCounted", "Resource",
+		"Node", "Window", "Viewport",
+		"Node2D", "Node3D", "Control",
+
+		# Common node types (2D)
+		"Sprite2D", "AnimatedSprite2D", "Camera2D",
+		"CollisionObject2D", "CollisionShape2D", "CollisionPolygon2D",
+		"CharacterBody2D", "RigidBody2D", "StaticBody2D", "Area2D",
+		"TileMap", "TileMapLayer",
+
+		# Common node types (3D)
+		"MeshInstance3D", "Camera3D", "Light3D",
+		"DirectionalLight3D", "OmniLight3D", "SpotLight3D",
+		"CollisionObject3D", "CollisionShape3D",
+		"CharacterBody3D", "RigidBody3D", "StaticBody3D", "Area3D",
+
+		# UI
+		"Control", "Button", "Label", "Panel", "TextureRect",
+		"LineEdit", "TextEdit", "RichTextLabel",
+		"VBoxContainer", "HBoxContainer", "GridContainer",
+
+		# Resources
+		"Texture2D", "Texture3D", "Material", "Shader", "ShaderMaterial",
+		"Mesh", "ArrayMesh", "StandardMaterial3D",
+		"Animation", "AnimationPlayer", "AnimationTree",
+		"AudioStream", "AudioStreamPlayer",
+
+		# Misc
+		"Image", "InputEvent", "SceneTree", "ExtensionsApi"
 	]
 
 	func add_range(
@@ -108,7 +147,7 @@ class GDScriptHighlight:
 		var result: Dictionary = {}
 		var comment_index := line.find("#")
 		var regex := RegEx.new()
-		var err = regex.compile("\\b" + keyword + "\\b")
+		var err = regex.compile(keyword)
 		if err != OK:
 			return result
 		for m in regex.search_all(line):
@@ -200,9 +239,13 @@ class GDScriptHighlight:
 		for keyword in GDSCRIPT_SYMBOLS: # Should be at the top
 			result.merge(add_operator(keyword, SYMBOL_COLOR, text), true)
 		for keyword in GDSCRIPT_KEYWORDS:
-			result.merge(add_keyword(keyword, KEYWORD_COLOR, text), true)
+			result.merge(add_keyword("\\b" + keyword + "\\b", KEYWORD_COLOR, text), true)
 		for keyword in GDSCRIPT_TYPES:
-			result.merge(add_keyword(keyword, TYPE_COLOR, text), true)
+			result.merge(add_keyword("\\b" + keyword + "\\b", TYPE_COLOR, text), true)
+
+		# Annotations
+		result.merge(add_keyword("@[A-Za-z_][A-Za-z0-9_]*", ANNOTATION_COLOR, text), true)
+
 		# Highlight function declaration
 		highlight_func_defs(text, result)
 		highlight_func_use(text, result)
