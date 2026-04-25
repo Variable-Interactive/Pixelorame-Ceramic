@@ -25,8 +25,9 @@ renderer/rendering_method.mobile="gl_compatibility"
 """
 
 
-static func create_project(directory_path: String):
+static func create_project(directory_path: String) -> String:
 	DirAccess.make_dir_recursive_absolute(directory_path)
 	var project_file := FileAccess.open(directory_path.path_join("project.godot"), FileAccess.WRITE)
 	project_file.store_string(PROJECT_FILE)
+	project_file.close()
 	return directory_path.path_join("project.godot")

@@ -18,6 +18,7 @@ enum {
 	FILE_REGISTERED,
 	FILE_CHANGED,
 	COMPLETION_REQUESTED,
+	SIGNATURE_REQUESTED,
 	DIAGNOSTICS_REQUESTED,
 	UNKNOWN
 }
@@ -53,7 +54,6 @@ var lsp_process: int = -1
 var was_connected := false
 var was_closed_by_notification := false
 
-
 @onready var activators: Node = %Activators
 @onready var script_list: ItemList = %ScriptList
 @onready var log_viewer: RichTextLabel = %LogViewer
@@ -84,6 +84,7 @@ func _ready() -> void:
 		else:
 			deserialize(data)
 	else:
+		try_connect_lsp()
 		create_virtual_script()
 
 
@@ -160,6 +161,7 @@ func _text_changed() -> void:
 			diagnostics_label.set_meta("type", Diagnostic.NONE)
 			for line in editor.get_line_count():
 				editor.set_line_background_color(line, Color(0, 0, 0, 0))
+			editor.show_signature("")
 
 		if current_virtual_script.source_code != editor.text:
 			current_virtual_script.source_code = editor.text
@@ -199,6 +201,11 @@ func _on_packet_recieved(packet: PackedByteArray):
 							log_output("Initialization Successful, LSP is ready.")
 						COMPLETION_REQUESTED:
 							last_completion_list = converted
+						SIGNATURE_REQUESTED:
+							if converted.get("result"):
+								handle_signature(converted.get("result"))
+							else:
+								handle_signature({})
 						UNKNOWN:
 							if converted.has("method"):
 								match converted["method"]:
@@ -400,6 +407,19 @@ func is_godot_present(at_path: String) -> bool:
 	return false
 
 
+func handle_signature(data: Dictionary):
+	var signatures: Array = data.get("signatures", [])
+	if not current_virtual_script:
+		return
+	var editor = editors[current_virtual_script]
+	if not editor:
+		return
+	for signature: Dictionary in signatures:
+		print(signature)
+		for key in signature.keys():
+			editor.show_signature(signature["label"], signature["documentation"]["value"])
+
+
 func handle_diagnostic(data: Dictionary):
 	if data and not data.is_empty():
 		var uid := (data.get("uri") as String).get_file()
@@ -471,7 +491,6 @@ func try_connect_lsp() -> void:
 		var args = OS.get_cmdline_user_args()
 		if "--child" in args:
 			return  # This is the headless/LSP instance so don't spawn again
-
 		lsp_process = OS.create_process(
 			godot_path_edit.text, [
 				"--headless",
@@ -601,6 +620,8 @@ func populate_completion_list(lsp_auto_comp_data: Dictionary):
 					editor.add_code_completion_option(CodeEdit.KIND_MEMBER, label, add_text)
 				13:
 					editor.add_code_completion_option(CodeEdit.KIND_ENUM, label, add_text)
+				17:
+					editor.add_code_completion_option(CodeEdit.KIND_FILE_PATH, label, add_text)
 				21:
 					editor.add_code_completion_option(CodeEdit.KIND_CONSTANT, label, add_text)
 				23:
@@ -612,50 +633,34 @@ func populate_completion_list(lsp_auto_comp_data: Dictionary):
 	editor.update_code_completion_options(true)
 
 
-func test_reg():
-	var file_uid := str(current_virtual_script.get_instance_id())
-	#var source := current_virtual_script.prepare_for_intellisence()
-	var source := current_virtual_script.source_code
+func register_lsp_file(f_name: String, f_text: String):
 	var request_new_file = json_rpc.make_request(
 		"textDocument/didOpen", {
 				"textDocument": {
-					"uri": "file:///virtual/%s" % file_uid,
+					"uri": "file:///virtual/%s" % f_name,
 					"languageId": "gdscript",
-					"version": 1,
-					"text": source
+					"text": f_text
 				}
 			},
 		FILE_REGISTERED
 	)
 	make_request(request_new_file)
 
+
 func send_autocomplete_request() -> void:
 	if not DirAccess.dir_exists_absolute(temp_path):
 		return
 	var file_uid := str(current_virtual_script.get_instance_id())
 	var source := current_virtual_script.prepare_for_intellisence()
-
 	if is_stream_connected:
 		if not current_virtual_script.is_registered_to_lsp: # register a file.
-			var request_new_file = json_rpc.make_request(
-				"textDocument/didOpen", {
-						"textDocument": {
-							"uri": "file:///virtual/%s" % file_uid,
-							"languageId": "gdscript",
-							"version": 2,
-							"text": source
-						}
-					},
-				FILE_REGISTERED
-			)
-			make_request(request_new_file)
+			register_lsp_file(file_uid, source)
 			current_virtual_script.is_registered_to_lsp = true
 		else: # Make changes to file.
 			var request_change = json_rpc.make_request(
 				"textDocument/didChange", {
 						"textDocument": {
 							"uri": "file:///virtual/%s" % file_uid,
-							"version": 2,
 						},
 						"contentChanges": [
 							{ "text": source }
@@ -671,7 +676,6 @@ func send_autocomplete_request() -> void:
 			"textDocument/completion", {
 					"textDocument": {
 						"uri": "file:///virtual/%s" % file_uid,
-						"version": 2,
 					},
 					"position": {
 						"line": editor.get_caret_line(), "character": editor.get_caret_column()
@@ -680,6 +684,18 @@ func send_autocomplete_request() -> void:
 			COMPLETION_REQUESTED
 		)
 		make_request(request_completion)
+		var req_signature = json_rpc.make_request(
+			"textDocument/signatureHelp", {
+					"textDocument": {
+						"uri": "file:///virtual/%s" % file_uid,
+					},
+					"position": {
+						"line": editor.get_caret_line(), "character": editor.get_caret_column()
+					}
+				},
+			SIGNATURE_REQUESTED
+		)
+		make_request(req_signature)
 
 
 func _on_file_browse_pressed() -> void:

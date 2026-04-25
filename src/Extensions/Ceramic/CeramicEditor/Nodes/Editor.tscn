@@ -17,3 +17,60 @@ indent_automatic = true
 auto_brace_completion_enabled = true
 auto_brace_completion_highlight_matching = true
 script = ExtResource("1_jqywl")
+
+[node name="SignaturePopup" type="Popup" parent="." unique_id=826774640]
+unique_name_in_owner = true
+disable_3d = true
+handle_input_locally = false
+oversampling_override = 1.0
+size = Vector2i(582, 131)
+mouse_passthrough_polygon = PackedVector2Array(0, 0)
+min_size = Vector2i(10, 100)
+
+[node name="PanelContainer" type="PanelContainer" parent="SignaturePopup" unique_id=646040507]
+self_modulate = Color(0.601223, 0.601223, 0.60122293, 1)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SignaturePopup/PanelContainer" unique_id=616110110]
+layout_mode = 2
+
+[node name="VSeparator" type="VSeparator" parent="SignaturePopup/PanelContainer/HBoxContainer" unique_id=1243441635]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SignaturePopup/PanelContainer/HBoxContainer" unique_id=1104677462]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator" type="HSeparator" parent="SignaturePopup/PanelContainer/HBoxContainer/VBoxContainer" unique_id=1299594665]
+layout_mode = 2
+
+[node name="SignatureLabel" type="RichTextLabel" parent="SignaturePopup/PanelContainer/HBoxContainer/VBoxContainer" unique_id=50249566]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 23)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="HSeparator2" type="HSeparator" parent="SignaturePopup/PanelContainer/HBoxContainer/VBoxContainer" unique_id=393569049]
+layout_mode = 2
+
+[node name="Description" type="RichTextLabel" parent="SignaturePopup/PanelContainer/HBoxContainer/VBoxContainer" unique_id=791665713]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 23)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="HSeparator3" type="HSeparator" parent="SignaturePopup/PanelContainer/HBoxContainer/VBoxContainer" unique_id=1841360466]
+layout_mode = 2
+
+[node name="VSeparator2" type="VSeparator" parent="SignaturePopup/PanelContainer/HBoxContainer" unique_id=663983208]
+layout_mode = 2
