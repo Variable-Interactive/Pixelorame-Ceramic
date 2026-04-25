@@ -130,7 +130,7 @@ class GDScriptHighlight:
 		var result: Dictionary = {}
 		var comment_index := line.find("#")
 		var start_idx: int = 0
-		while true:
+		while start_idx != -1:
 			start_idx = line.find(operator, start_idx)
 			if comment_index != -1 and start_idx > comment_index:
 				break
@@ -159,6 +159,39 @@ class GDScriptHighlight:
 				"color": FUNCTION_DEFINE_COLOR,
 			}
 
+	func highlight_func_use(line: String, result: Dictionary):
+		var func_def_index := line.find("func")
+		var comment_index := line.find("#")
+
+		var r_start := line.length()  # End of the actual string.
+		while r_start != -1:
+			r_start = line.rfind("(", r_start - 1)
+			if comment_index != -1 and r_start > comment_index:
+				continue
+			if r_start == -1:
+				break
+
+			var l_start := r_start  # Start of the actual string.
+			# move leftward
+			var name_started := false
+			while l_start >= 0:
+				l_start -= 1
+				# reached func keyword instead of getting the name
+				if func_def_index != -1 and l_start <= func_def_index + 3:
+					break
+				if not name_started and line[l_start].is_valid_ascii_identifier():
+					name_started = true
+				if name_started:
+					var start_indicators := [".", " ", ":", "	"]
+					if line[l_start] in start_indicators:
+						break
+			result[l_start + 1] = {
+				"color": FUNCTION_COLOR,
+			}
+			result[r_start] = {
+				"color": SYMBOL_COLOR,
+			}
+
 	func _get_line_syntax_highlighting(line: int) -> Dictionary:
 		var result := {}  # Order of
 		var text := get_text_edit().get_line(line)
@@ -172,6 +205,7 @@ class GDScriptHighlight:
 			result.merge(add_keyword(keyword, TYPE_COLOR, text), true)
 		# Highlight function declaration
 		highlight_func_defs(text, result)
+		highlight_func_use(text, result)
 
 		## Comments
 		var comment_index := text.find("#")
