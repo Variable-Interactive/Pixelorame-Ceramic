@@ -146,8 +146,10 @@ func disconnect_lsp_stream() -> void:
 		_is_stream_connected = false
 		message.emit("stream_disconnected")
 
-	connected.disconnect(_on_connected_to_lsp_server)
-	packet_received.disconnect(_on_packet_recieved)
+	if connected.is_connected(_on_connected_to_lsp_server):
+		connected.disconnect(_on_connected_to_lsp_server)
+	if packet_received.is_connected(_on_packet_recieved):
+		packet_received.disconnect(_on_packet_recieved)
 	if _lsp_process != -1 and _lsp_process != 0:
 		message.emit("Killing stream at PID: %s" % str(_lsp_process))
 		OS.kill(_lsp_process)

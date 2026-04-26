@@ -13,6 +13,8 @@ enum Diagnostic { NONE, WARN, ERROR }
 var ceramic_data := ConfigFile.new()
 
 var godot_lsp := GodotLSP.new()
+var non_lsp_validator := ScriptValidator.new()
+
 var virtual_scripts: Array[VirtualScript] = []
 var editors: Dictionary[VirtualScript, CodeEdit] = {}
 var current_virtual_script: VirtualScript:
@@ -35,16 +37,16 @@ var current_virtual_script: VirtualScript:
 var was_lsp_connected := false
 var was_lsp_closed_by_notification := false
 
-var lsp_enabled := true:
+var lsp_enabled := false:
 	set(value):
 		lsp_enabled = value
 		if value and not godot_lsp.is_active():
 			godot_lsp.try_connect_lsp(godot_path_edit.text)
 		else:
-			if godot_lsp.stream:
-				godot_lsp.disconnect_lsp_stream()
+			godot_lsp.disconnect_lsp_stream()
 
 
+@onready var lsp_checkbox: CheckButton = %LSPEnabled  # LSP toggle
 @onready var activators: Node = %Activators  # parent thar hosts nodes for the scripts
 @onready var script_list: ItemList = %ScriptList  # ItemList of stript files
 @onready var log_viewer: RichTextLabel = %LogViewer  # The Output console.
@@ -58,10 +60,13 @@ var lsp_enabled := true:
 @onready var executable_chooser: FileDialog = %ExecutableChooser
 @onready var extension_api: Node  ## A variable for easy reference to the Api
 @onready var script_info_bar: HBoxContainer = %ScriptInfoBar  # Container for name and status of script.
+@onready var path_container: HBoxContainer = %PathContainer  # Container to godot path field
 
 func _ready() -> void:
 	# LSP signals
 	add_child(godot_lsp)
+	non_lsp_validator.MessageBus.print_requested.connect(print_bus_message)
+	non_lsp_validator.message.connect(log_output)
 	godot_lsp.packet_received.connect(_on_packet_recieved)
 	godot_lsp.initialized.connect(_lsp_initialized)
 	godot_lsp.message.connect(log_output)
@@ -75,15 +80,15 @@ func _ready() -> void:
 		#var config: ConfigFile = extension_api.general.get_config_file()
 		var data: Dictionary = ceramic_data.get_value("Ceramic", "data", {})
 		var godot_path: String = ceramic_data.get_value("Ceramic", "godot", "")
+		lsp_enabled = ceramic_data.get_value("Ceramic", "lsp_enabled", lsp_enabled)
+		lsp_checkbox.set_pressed_no_signal(lsp_enabled)
 		if not godot_path.is_empty() and GodotLSP.is_godot_present(godot_path):
 			godot_path_edit.text = godot_path
-		lsp_enabled = true
 		if data.is_empty():
 			create_virtual_script()
 		else:
 			deserialize(data)
 	else:
-		lsp_enabled = true
 		create_virtual_script()
 
 
@@ -123,6 +128,12 @@ func _exit_tree() -> void:
 
 
 ## LSP Handler
+
+
+func _on_lsp_enabled_toggled(toggled_on: bool) -> void:
+	if lsp_enabled != toggled_on:
+		lsp_enabled = toggled_on
+	path_container.visible = toggled_on
 
 
 func _lsp_initialized() -> void:
@@ -369,8 +380,19 @@ func run_code(virtual_script: VirtualScript) -> void:
 
 	var script_id := virtual_script.get_instance_id()
 	var new_script := GDScript.new()
-	new_script.source_code = virtual_script.source_code
-	new_script.reload()
+	if not non_lsp_validator.validate_code(virtual_script.source_code, str(script_id)) == OK:
+		return
+	new_script.source_code = non_lsp_validator.add_guards(
+		virtual_script.source_code, str(script_id)
+	)
+
+	var error_code := new_script.reload()
+	if not new_script.can_instantiate() or error_code != OK:
+		log_output("Script errored out (code %s); stopping" % [error_code])
+		var label = "[color=red]There are errors in your script. Fix them first![/color]"
+		log_output(label)
+		return
+
 	var instance: Node = ClassDB.instantiate(new_script.get_instance_base_type())
 	instance.name = str(script_id)
 	instance.set_script(new_script)
@@ -379,22 +401,61 @@ func run_code(virtual_script: VirtualScript) -> void:
 	update_script_status(virtual_script)
 
 
-func throw_error(message: String, line: int):
+func throw_error(message: String, line: int, show_in_log := false):
 	diagnostics_label.set_meta("type", Diagnostic.ERROR)
 	var label = "[color=red](Line %s) ERROR: %s[/color]" % [str(line + 1), message]
+	if show_in_log:
+		log_output(label)
 	for connection in diagnostic_timer.timeout.get_connections():
 		diagnostic_timer.timeout.disconnect(connection.callable)
 	diagnostic_timer.timeout.connect(_on_diagnostic_timer_timeout.bind(label, line))
 	diagnostic_timer.start()
 
 
-func throw_warn(message: String, line: int):
+func throw_warn(message: String, line: int, show_in_log := false):
 	diagnostics_label.set_meta("type", Diagnostic.WARN)
 	var label = "[color=yellow](Line %s) WARN: %s[/color]" % [str(line + 1), message]
+	if show_in_log:
+		log_output(label)
 	for connection in diagnostic_timer.timeout.get_connections():
 		diagnostic_timer.timeout.disconnect(connection.callable)
 	diagnostic_timer.timeout.connect(_on_diagnostic_timer_timeout.bind(label, line))
 	diagnostic_timer.start()
+
+
+# Adds a message related to a specific line in a specific file
+func print_bus_message(
+		type: int,
+		text: String,
+		_file_name: String,
+		line: int,
+		_character: int,
+		_code: int,
+) -> void:
+	if not is_inside_tree():
+		return
+
+	if type in [
+		non_lsp_validator.MessageBus.MESSAGE_TYPE.ASSERT,
+		non_lsp_validator.MessageBus.MESSAGE_TYPE.ERROR,
+	]:
+		throw_error(text, line, true)
+		return
+	elif type == non_lsp_validator.MessageBus.MESSAGE_TYPE.WARNING:
+		throw_warn(text, line, true)
+
+	print_output([text])
+
+
+# Prints plain text output. Use this when you want to display the output of a
+# print statement.
+func print_output(values: Array) -> void:
+	if not is_inside_tree():
+		return
+	var output := ""
+	for value in values:
+		output += var_to_str(value)
+	log_output(output)
 
 
 func log_output(text: String):
@@ -484,8 +545,8 @@ func _on_delete_script_pressed() -> void:
 
 
 func _on_run_script_pressed() -> void:
-	save_data()
 	run_code(current_virtual_script)
+	save_data()  # Save AFTER making sure the script runs
 
 
 func _on_stop_script_pressed() -> void:

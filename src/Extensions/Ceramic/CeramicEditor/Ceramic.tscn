@@ -21,21 +21,39 @@ layout_mode = 2
 [node name="GodotBar" type="HBoxContainer" parent="VBoxContainer" unique_id=1422330662]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/GodotBar" unique_id=147974062]
+[node name="LSPEnabled" type="CheckButton" parent="VBoxContainer/GodotBar" unique_id=465903464]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Godot LSP: Off"
+
+[node name="Label2" type="Label" parent="VBoxContainer/GodotBar" unique_id=1960711864]
+layout_mode = 2
+text = "On"
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/GodotBar" unique_id=182646538]
+layout_mode = 2
+
+[node name="PathContainer" type="HBoxContainer" parent="VBoxContainer/GodotBar" unique_id=1243346019]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="VBoxContainer/GodotBar/PathContainer" unique_id=147974062]
 layout_mode = 2
 text = "Godot Path:"
 
-[node name="GodotPath" type="LineEdit" parent="VBoxContainer/GodotBar" unique_id=1789654650]
+[node name="GodotPath" type="LineEdit" parent="VBoxContainer/GodotBar/PathContainer" unique_id=1789654650]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Enter Godot Path..."
 
-[node name="FileBrowse" type="Button" parent="VBoxContainer/GodotBar" unique_id=138463119]
+[node name="FileBrowse" type="Button" parent="VBoxContainer/GodotBar/PathContainer" unique_id=138463119]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 
-[node name="TextureRect" type="TextureRect" parent="VBoxContainer/GodotBar/FileBrowse" unique_id=2108888870]
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/GodotBar/PathContainer/FileBrowse" unique_id=2108888870]
 texture_filter = 1
 layout_mode = 1
 anchors_preset = 15
@@ -186,6 +204,9 @@ layout_mode = 2
 bbcode_enabled = true
 fit_content = true
 
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/VBoxContainer" unique_id=885712502]
+layout_mode = 2
+
 [node name="Output" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer" unique_id=1628876127]
 unique_name_in_owner = true
 layout_mode = 2
@@ -259,8 +280,9 @@ unique_name_in_owner = true
 wait_time = 0.3
 one_shot = true
 
-[connection signal="text_changed" from="VBoxContainer/GodotBar/GodotPath" to="." method="_on_godot_path_text_changed"]
-[connection signal="pressed" from="VBoxContainer/GodotBar/FileBrowse" to="." method="_on_file_browse_pressed"]
+[connection signal="toggled" from="VBoxContainer/GodotBar/LSPEnabled" to="." method="_on_lsp_enabled_toggled"]
+[connection signal="text_changed" from="VBoxContainer/GodotBar/PathContainer/GodotPath" to="." method="_on_godot_path_text_changed"]
+[connection signal="pressed" from="VBoxContainer/GodotBar/PathContainer/FileBrowse" to="." method="_on_file_browse_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer/NewScriptButton" to="." method="_on_new_script_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/HSplitContainer/ScriptTabs/ScriptList" to="." method="_on_script_list_item_selected"]
 [connection signal="text_changed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar/ScriptNameEdit" to="." method="_on_script_name_edit_text_changed"]

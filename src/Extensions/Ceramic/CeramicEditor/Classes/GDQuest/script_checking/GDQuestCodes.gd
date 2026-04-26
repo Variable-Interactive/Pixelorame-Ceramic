@@ -1,0 +1,8 @@
+class_name GDQuestCodes
+
+enum ErrorCode {
+	RECURSIVE_FUNCTION,
+	INFINITE_WHILE_LOOP,
+	INVALID_NO_CATCH,
+	NO_PARSER_CLASS,
+}
