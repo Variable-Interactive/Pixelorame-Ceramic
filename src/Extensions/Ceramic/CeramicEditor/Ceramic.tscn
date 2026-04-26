@@ -254,16 +254,6 @@ folder_creation_enabled = false
 overwrite_warning_enabled = false
 deleting_enabled = false
 
-[node name="GodotStartupTimer" type="Timer" parent="." unique_id=1923036486]
-unique_name_in_owner = true
-wait_time = 0.5
-one_shot = true
-
-[node name="PacketScanTimer" type="Timer" parent="." unique_id=606024549]
-unique_name_in_owner = true
-wait_time = 0.3
-autostart = true
-
 [node name="DiagnosticTimer" type="Timer" parent="." unique_id=769619502]
 unique_name_in_owner = true
 wait_time = 0.3
@@ -281,5 +271,3 @@ one_shot = true
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons/CopyLog" to="." method="_on_copy_log_pressed"]
 [connection signal="toggled" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/LogButton" to="." method="_on_log_button_toggled"]
 [connection signal="file_selected" from="CeramicDialogs/ExecutableChooser" to="." method="_on_executable_chooser_file_selected"]
-[connection signal="timeout" from="GodotStartupTimer" to="." method="_on_godot_startup_timer_timeout"]
-[connection signal="timeout" from="PacketScanTimer" to="." method="_ping_timer_timeout"]

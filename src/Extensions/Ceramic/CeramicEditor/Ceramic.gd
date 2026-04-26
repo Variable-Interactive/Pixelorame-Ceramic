@@ -1,12 +1,7 @@
 extends PanelContainer
 
-## This is the default values for godot editor settings.
-const HOST := "127.0.0.1"
-## This is the default values for godot editor settings.
-const PORT: int = 6005
 
 const CERAMIC_CONFIG_PATH := "user://ceramic_data.ini"
-const CONNECTION_MAX_ATTEMPTS: int = 50
 const ACTIVATOR_GROUP := "Activators"
 const EDITOR_SCENE := preload("res://src/Extensions/Ceramic/CeramicEditor/Nodes/Editor.tscn")
 
@@ -14,21 +9,10 @@ const ERROR_COLOR := Color.RED
 const WARN_COLOR := Color.YELLOW
 
 enum Diagnostic { NONE, WARN, ERROR }
-enum {
-	INITIALIZATION,
-	FILE_REGISTERED,
-	FILE_CHANGED,
-	COMPLETION_REQUESTED,
-	SIGNATURE_REQUESTED,
-	UNKNOWN
-}
-
-signal connected()
-signal packet_received(packet:PackedByteArray)
 
 var ceramic_data := ConfigFile.new()
 
-var temp_path := OS.get_temp_dir().path_join("ceramic_temp")
+var godot_lsp := GodotLSP.new()
 var virtual_scripts: Array[VirtualScript] = []
 var editors: Dictionary[VirtualScript, CodeEdit] = {}
 var current_virtual_script: VirtualScript:
@@ -44,34 +28,44 @@ var current_virtual_script: VirtualScript:
 				other_editor.visible = (other_editor == editor)
 			diagnostics_label.visible = false
 			diagnostics_label.set_meta("type", Diagnostic.NONE)
-			send_autocomplete_request()
+			godot_lsp.send_autocomplete_request(value, editor)
 		if script_info_bar:
 			script_info_bar.visible = (value != null)
 
-var godot_connect_attempt: int = 0
-var stream: StreamPeerTCP
-var is_stream_connected := false
-var json_rpc := JSONRPC.new()
-var lsp_process: int = -1
-var was_connected := false
-var was_closed_by_notification := false
+var was_lsp_connected := false
+var was_lsp_closed_by_notification := false
 
-@onready var activators: Node = %Activators
-@onready var script_list: ItemList = %ScriptList
-@onready var log_viewer: RichTextLabel = %LogViewer
-@onready var diagnostics_label: RichTextLabel = %Diagnostics
-@onready var script_name_edit: LineEdit = %ScriptNameEdit
-@onready var godot_path_edit: LineEdit = %GodotPath
-@onready var editor_container: VBoxContainer = %EditorContainer
-@onready var output: HBoxContainer = %Output
-@onready var status_info: Label = %StatusInfo
-@onready var godot_startup_timer: Timer = %GodotStartupTimer
-@onready var diagnostic_timer: Timer = %DiagnosticTimer
+var lsp_enabled := true:
+	set(value):
+		lsp_enabled = value
+		if value and not godot_lsp.is_active():
+			godot_lsp.try_connect_lsp(godot_path_edit.text)
+		else:
+			if godot_lsp.stream:
+				godot_lsp.disconnect_lsp_stream()
+
+
+@onready var activators: Node = %Activators  # parent thar hosts nodes for the scripts
+@onready var script_list: ItemList = %ScriptList  # ItemList of stript files
+@onready var log_viewer: RichTextLabel = %LogViewer  # The Output console.
+@onready var diagnostics_label: RichTextLabel = %Diagnostics  # Label that displays errors in scripts
+@onready var script_name_edit: LineEdit = %ScriptNameEdit   # The Script name field
+@onready var godot_path_edit: LineEdit = %GodotPath  # Godot path field
+@onready var editor_container: VBoxContainer = %EditorContainer  # Host container of the editor CodeEdit nodes.
+@onready var output_container: HBoxContainer = %Output  # Container of the output console.
+@onready var status_info: Label = %StatusInfo  # Shows current starus of script (Running/stopped)
+@onready var diagnostic_timer: Timer = %DiagnosticTimer  # Used to wait for text to stop for displaying diagnostic.
 @onready var executable_chooser: FileDialog = %ExecutableChooser
 @onready var extension_api: Node  ## A variable for easy reference to the Api
-@onready var script_info_bar: HBoxContainer = %ScriptInfoBar
+@onready var script_info_bar: HBoxContainer = %ScriptInfoBar  # Container for name and status of script.
 
 func _ready() -> void:
+	# LSP signals
+	add_child(godot_lsp)
+	godot_lsp.packet_received.connect(_on_packet_recieved)
+	godot_lsp.initialized.connect(_lsp_initialized)
+	godot_lsp.message.connect(log_output)
+
 	extension_api = get_node_or_null("/root/ExtensionsApi")  # Accessing the Api
 	if extension_api:
 		extension_api.general.get_global().pixelorama_about_to_close.connect(_exit_tree)
@@ -81,15 +75,15 @@ func _ready() -> void:
 		#var config: ConfigFile = extension_api.general.get_config_file()
 		var data: Dictionary = ceramic_data.get_value("Ceramic", "data", {})
 		var godot_path: String = ceramic_data.get_value("Ceramic", "godot", "")
-		if not godot_path.is_empty() and is_godot_present(godot_path):
+		if not godot_path.is_empty() and GodotLSP.is_godot_present(godot_path):
 			godot_path_edit.text = godot_path
-		try_connect_lsp()
+		lsp_enabled = true
 		if data.is_empty():
 			create_virtual_script()
 		else:
 			deserialize(data)
 	else:
-		try_connect_lsp()
+		lsp_enabled = true
 		create_virtual_script()
 
 
@@ -115,83 +109,28 @@ func deserialize(data: Dictionary):
 func _notification(what):
 	match what:
 		NOTIFICATION_CRASH:
-			disconnect_lsp_stream()
-			was_closed_by_notification = true
+			godot_lsp.disconnect_lsp_stream()
+			was_lsp_closed_by_notification = true
 		NOTIFICATION_WM_CLOSE_REQUEST:
-			was_closed_by_notification = true
-			disconnect_lsp_stream()
+			was_lsp_closed_by_notification = true
+			godot_lsp.disconnect_lsp_stream()
 
 
 func _exit_tree() -> void:
 	if extension_api:
 		save_data()
-	disconnect_lsp_stream()
+	godot_lsp.disconnect_lsp_stream()
 
 
-####### Signals
-func _on_new_script_button_pressed() -> void:
-	create_virtual_script()
+## LSP Handler
 
 
-func _on_script_name_edit_text_changed(new_text: String) -> void:
-	new_text = new_text.strip_edges()
-	if new_text.is_empty():
-		new_text = "Untitled"
-	if current_virtual_script.name == new_text:
-		return
-	if new_text.is_valid_filename():
-		current_virtual_script.name = new_text
-		var idx = virtual_scripts.find(current_virtual_script)
-		if script_list.get_item_metadata(idx) != current_virtual_script.get_instance_id():
-			refresh_script_list()
-		else:
-			script_list.set_item_text(
-				idx,
-				current_virtual_script.name + "(%s)" % get_script_status(current_virtual_script)
-			)
-
-
-func _on_script_list_item_selected(index: int) -> void:
-	if index < virtual_scripts.size():
-		current_virtual_script = virtual_scripts[index]
-
-
-func _ping_timer_timeout() -> void:
-	if not current_virtual_script:
-		return
-	scan_for_packets()
-
-
-func _text_changed() -> void:
-	var editor: CodeEdit = editors.get(current_virtual_script)
-	if editor:
-		if diagnostics_label.visible:
-			diagnostics_label.visible = false
-			diagnostics_label.set_meta("type", Diagnostic.NONE)
-			for line in editor.get_line_count():
-				editor.set_line_background_color(line, Color(0, 0, 0, 0))
-			editor.show_signature("")
-
-		if current_virtual_script.source_code != editor.text:
-			current_virtual_script.source_code = editor.text
-			if not stream:
-				if was_connected and was_closed_by_notification:
-					was_connected = false
-					was_closed_by_notification = false
-					try_connect_lsp()
-					return
-			send_autocomplete_request()
-
-
-func _on_run_script_pressed() -> void:
-	save_data()
-	run_code(current_virtual_script)
-
-
-func _on_godot_path_text_changed(file_path: String) -> void:
-	if not is_stream_connected and is_godot_present(file_path.strip_edges()):
-		godot_path_edit.text = file_path.strip_edges()
-		try_connect_lsp()
+func _lsp_initialized() -> void:
+	was_lsp_connected = true
+	log_output("Initialization Successful, LSP is ready.")
+	godot_lsp.send_autocomplete_request(
+		current_virtual_script, editors.get(current_virtual_script)
+	)
 
 
 func _on_packet_recieved(packet: PackedByteArray):
@@ -205,19 +144,15 @@ func _on_packet_recieved(packet: PackedByteArray):
 			var converted = str_to_var(entry.strip_edges())
 			if typeof(converted) == TYPE_DICTIONARY:
 				if not converted in results:
-					match converted.get("id", UNKNOWN):
-						INITIALIZATION:
-							was_connected = true
-							log_output("Initialization Successful, LSP is ready.")
-							send_autocomplete_request()
-						COMPLETION_REQUESTED:
+					match converted.get("id", GodotLSP.UNKNOWN):
+						GodotLSP.COMPLETION_REQUESTED:
 							last_completion_list = converted
-						SIGNATURE_REQUESTED:
+						GodotLSP.SIGNATURE_REQUESTED:
 							if converted.get("result"):
 								handle_signature(converted.get("result"))
 							else:
 								handle_signature({})
-						UNKNOWN:
+						GodotLSP.UNKNOWN:
 							if converted.has("method"):
 								match converted["method"]:
 									"textDocument/publishDiagnostics":
@@ -227,49 +162,89 @@ func _on_packet_recieved(packet: PackedByteArray):
 		populate_completion_list(last_completion_list)
 
 
-func _on_stop_script_pressed() -> void:
-	stop_script(current_virtual_script)
-
-
-func _on_clear_log_pressed() -> void:
-	log_viewer.text = ""
-
-
-func _on_copy_log_pressed() -> void:
-	DisplayServer.clipboard_set(log_viewer.text)
-
-
-func _on_log_button_toggled(toggled_on: bool) -> void:
-	output.visible = toggled_on
-
-
-func _on_delete_script_pressed() -> void:
-	remove_virtual_script(current_virtual_script)
-
-
-func _on_diagnostic_timer_timeout(message: String, line: int) -> void:
-	# Clear last highlight
-	var editor: CodeEdit = editors.get(current_virtual_script)
+func handle_signature(data: Dictionary):
+	var signatures: Array = data.get("signatures", [])
+	if not current_virtual_script:
+		return
+	var editor = editors[current_virtual_script]
 	if not editor:
 		return
-	for l in editor.get_line_count():
-		editor.set_line_background_color(l, Color(0, 0, 0, 0))
-	if line < 0 or line >= editor.get_line_count():
-		return
-	diagnostics_label.text = message
-	diagnostics_label.visible = true
-	var highlight := Color(0, 0, 0, 0)
-	match diagnostics_label.get_meta("type", Diagnostic.NONE):
-		Diagnostic.ERROR:
-			highlight = ERROR_COLOR
-			highlight.a = 0.1
-		Diagnostic.WARN:
-			highlight = WARN_COLOR
-			highlight.a = 0.1
-	editor.set_line_background_color(line, highlight)
+	for signature: Dictionary in signatures:
+		for key in signature.keys():
+			editor.show_signature(signature["label"], signature["documentation"]["value"])
 
 
-####### Actions
+func handle_diagnostic(data: Dictionary):
+	if data and not data.is_empty():
+		var uid := (data.get("uri") as String).get_file()
+		if str(current_virtual_script.get_instance_id()) != uid:
+			return
+		var diagnostics: Array = data.get("diagnostics", [])
+		var last_warn := ""
+		var warn_line := -1
+		var last_err := ""
+		var err_line := -1
+		var editor = editors[current_virtual_script]
+		for diag: Dictionary in diagnostics:
+			match diag.get("code", 0):
+				-1: # Error
+					var err: String = diag.get("message", 0)
+					if "Error while getting cache for script" in err:
+						# Ignore this error
+						continue
+					last_err = diag.get("message", 0)
+					err_line = diag.get("range", {}).get("start", {}).get("line", -1)
+				_: # Warning
+					var w_line: int = diag.get("range", {}).get("start", {}).get("line", -1)
+					if w_line >= editor.get_line_count():
+						# Ignore warnings related to api
+						continue
+					last_warn = diag.get("message", 0)
+					warn_line = warn_line
+
+		if not last_err.strip_edges().is_empty():
+			throw_error(last_err, err_line)
+
+		elif not last_warn.strip_edges().is_empty():
+			throw_warn(last_warn, warn_line)
+
+
+func populate_completion_list(lsp_auto_comp_data: Dictionary):
+	var editor: CodeEdit = editors.get(current_virtual_script)
+	for entry in lsp_auto_comp_data.get("result", []):
+		if typeof(entry) == TYPE_DICTIONARY:
+			var add_text = entry.get("insertText", "")
+			var label = entry.get("label", "")
+			var type = entry.get("kind", 0)
+			match type:
+				1: # (Keywords e.g var, int etc.)
+					editor.add_code_completion_option(CodeEdit.KIND_MEMBER, label, add_text)
+				2:
+					editor.add_code_completion_option(CodeEdit.KIND_FUNCTION, label, add_text)
+				6:
+					editor.add_code_completion_option(CodeEdit.KIND_VARIABLE, label, add_text)
+				7:
+					editor.add_code_completion_option(CodeEdit.KIND_CLASS, label, add_text)
+				10:
+					editor.add_code_completion_option(CodeEdit.KIND_MEMBER, label, add_text)
+				13:
+					editor.add_code_completion_option(CodeEdit.KIND_ENUM, label, add_text)
+				17:
+					editor.add_code_completion_option(CodeEdit.KIND_FILE_PATH, label, add_text)
+				21:
+					editor.add_code_completion_option(CodeEdit.KIND_CONSTANT, label, add_text)
+				23:
+					editor.add_code_completion_option(CodeEdit.KIND_SIGNAL, label, add_text)
+				_:
+					editor.add_code_completion_option(CodeEdit.KIND_PLAIN_TEXT, label, add_text)
+					log_output("This type was uncategorized: %s %s" % [str(type), add_text])
+
+	editor.update_code_completion_options(true)
+
+
+## Script Handler
+
+
 func get_script_status(virtual_script: VirtualScript):
 	var activator: Node = %Activators.find_child(
 		str(virtual_script.get_instance_id()), false, false
@@ -392,7 +367,6 @@ func run_code(virtual_script: VirtualScript) -> void:
 		log_output(label)
 		return
 
-
 	var script_id := virtual_script.get_instance_id()
 	var new_script := GDScript.new()
 	new_script.source_code = virtual_script.source_code
@@ -403,66 +377,6 @@ func run_code(virtual_script: VirtualScript) -> void:
 	instance.add_to_group(ACTIVATOR_GROUP)
 	activators.add_child(instance)
 	update_script_status(virtual_script)
-
-
-func is_godot_present(at_path: String) -> bool:
-	if at_path.is_empty():
-		return false
-	var out := []
-	var godot_executed := OS.execute(at_path, ["-h"], out)
-	if godot_executed == 0 or godot_executed == 1:
-		if out.size() > 0:
-			for result: String in out:
-				if "Godot" in result:
-					return true
-	return false
-
-
-func handle_signature(data: Dictionary):
-	var signatures: Array = data.get("signatures", [])
-	if not current_virtual_script:
-		return
-	var editor = editors[current_virtual_script]
-	if not editor:
-		return
-	for signature: Dictionary in signatures:
-		for key in signature.keys():
-			editor.show_signature(signature["label"], signature["documentation"]["value"])
-
-
-func handle_diagnostic(data: Dictionary):
-	if data and not data.is_empty():
-		var uid := (data.get("uri") as String).get_file()
-		if str(current_virtual_script.get_instance_id()) != uid:
-			return
-		var diagnostics: Array = data.get("diagnostics", [])
-		var last_warn := ""
-		var warn_line := -1
-		var last_err := ""
-		var err_line := -1
-		var editor = editors[current_virtual_script]
-		for diag: Dictionary in diagnostics:
-			match diag.get("code", 0):
-				-1: # Error
-					var err: String = diag.get("message", 0)
-					if "Error while getting cache for script" in err:
-						# Ignore this error
-						continue
-					last_err = diag.get("message", 0)
-					err_line = diag.get("range", {}).get("start", {}).get("line", -1)
-				_: # Warning
-					var w_line: int = diag.get("range", {}).get("start", {}).get("line", -1)
-					if w_line >= editor.get_line_count():
-						# Ignore warnings related to api
-						continue
-					last_warn = diag.get("message", 0)
-					warn_line = warn_line
-
-		if not last_err.strip_edges().is_empty():
-			throw_error(last_err, err_line)
-
-		elif not last_warn.strip_edges().is_empty():
-			throw_warn(last_warn, warn_line)
 
 
 func throw_error(message: String, line: int):
@@ -488,224 +402,94 @@ func log_output(text: String):
 	print(text)  # Print to terminal as well
 
 
-####### LSP SYSTEM
-func try_connect_lsp() -> void:
-	if stream:
-		disconnect_lsp_stream()
-	connected.connect(_on_connected_to_lsp_server)
-	packet_received.connect(_on_packet_recieved)
-	is_stream_connected = false
+####### Signals
+func _on_godot_path_text_changed(file_path: String) -> void:
+	if lsp_enabled and GodotLSP.is_godot_present(file_path.strip_edges()):
+		godot_path_edit.text = file_path.strip_edges()
+		lsp_enabled = true  # re-call setter
 
-	# Connect to LSP server
-	if is_godot_present(godot_path_edit.text):
-		var args = OS.get_cmdline_user_args()
-		if "--child" in args:
-			return  # This is the headless/LSP instance so don't spawn again
-		lsp_process = OS.create_process(
-			godot_path_edit.text, [
-				"--headless",
-				DummyProject.create_project(temp_path),
-				"++",
-				"--child"
-			]
-		)
-		if lsp_process != -1:
-			log_output("Godot starting, process id: %s" % str(lsp_process))
-			stream = StreamPeerTCP.new()
-			log_output("Connecting to Host: %s, Port: %s" % [HOST, str(PORT)])
-			godot_startup_timer.start()
+
+func _on_script_name_edit_text_changed(new_text: String) -> void:
+	new_text = new_text.strip_edges()
+	if new_text.is_empty():
+		new_text = "Untitled"
+	if current_virtual_script.name == new_text:
+		return
+	if new_text.is_valid_filename():
+		current_virtual_script.name = new_text
+		var idx = virtual_scripts.find(current_virtual_script)
+		if script_list.get_item_metadata(idx) != current_virtual_script.get_instance_id():
+			refresh_script_list()
 		else:
-			log_output("Could not create TCP server...")
-	else:
-		godot_path_edit.text = ""
-		log_output("Godot not found, code suggestions can not be performed")
-		disconnect_lsp_stream()
-
-
-func _on_godot_startup_timer_timeout() -> void:
-	godot_connect_attempt += 1
-	log_output("Attempt --- %s" % str(godot_connect_attempt))
-	stream.disconnect_from_host()
-	stream.connect_to_host(HOST, PORT)
-
-
-func disconnect_lsp_stream() -> void:
-	if stream:
-		stream.disconnect_from_host()
-		stream = null
-		is_stream_connected = false
-		log_output("stream_disconnected")
-
-	for connection in connected.get_connections():
-		connected.disconnect(connection.callable)
-	for connection in packet_received.get_connections():
-		packet_received.disconnect(connection.callable)
-	if lsp_process != -1 and lsp_process != 0:
-		log_output("Killing stream at PID: %s" % str(lsp_process))
-		OS.kill(lsp_process)
-		lsp_process = -1
-	godot_connect_attempt = 0
-
-
-func make_request(request: Dictionary) -> void:
-	if not stream:
-		return
-	var json = JSON.stringify(request)
-	var length = json.to_utf8_buffer().size()
-	var content = """Content-Length: {length}\r\n\r\n{json}""".format({
-		length = length,
-		json = json
-	})
-	var packet = content.to_utf8_buffer()
-	stream.put_data(packet)
-
-
-func scan_for_packets() -> void:
-	if not stream:
-		return
-	var status = stream.get_status()
-	match status:
-		StreamPeerTCP.STATUS_NONE:
-			return
-		StreamPeerTCP.STATUS_ERROR:
-			if godot_connect_attempt < CONNECTION_MAX_ATTEMPTS:
-				if godot_startup_timer.is_stopped():
-					godot_startup_timer.start()
-			else:
-				log_output("Server stream error!")
-				disconnect_lsp_stream()
-		_: # (STATUS_CONNECTING or STATUS_CONNECTED)
-			# update our connection status (called only once)
-			if status == StreamPeerTCP.STATUS_CONNECTED and not is_stream_connected:
-				is_stream_connected = true
-				connected.emit()
-
-			if stream.poll() == OK:  # We have reseaved something from LSP server
-				var available_bytes = stream.get_available_bytes()
-				if available_bytes > 0:
-					var data = stream.get_data(available_bytes)
-					if data[0] == OK:
-						# A valid packet detected, send it to packet manager.
-						packet_received.emit(data[1])
-					else:
-						log_output("Error when getting data: %s" % error_string(data[0]))
-			else:
-				if godot_connect_attempt < CONNECTION_MAX_ATTEMPTS:
-					if godot_startup_timer.is_stopped():
-						godot_startup_timer.start()
-				else:
-					log_output("Failed to poll()")
-
-
-func _on_connected_to_lsp_server():
-	var request = json_rpc.make_request(
-		"initialize", {
-			"processId": null,
-			"rootUri": "file:///%s" % godot_path_edit.text,
-			"capabilities": {}
-		},
-		INITIALIZATION
-	)
-	log_output("CONNECTED to Server Initializing LSP...")
-	make_request(request)
-
-
-func populate_completion_list(lsp_auto_comp_data: Dictionary):
-	var editor: CodeEdit = editors.get(current_virtual_script)
-	for entry in lsp_auto_comp_data.get("result", []):
-		if typeof(entry) == TYPE_DICTIONARY:
-			var add_text = entry.get("insertText", "")
-			var label = entry.get("label", "")
-			var type = entry.get("kind", 0)
-			match type:
-				1: # (Keywords e.g var, int etc.)
-					editor.add_code_completion_option(CodeEdit.KIND_MEMBER, label, add_text)
-				2:
-					editor.add_code_completion_option(CodeEdit.KIND_FUNCTION, label, add_text)
-				6:
-					editor.add_code_completion_option(CodeEdit.KIND_VARIABLE, label, add_text)
-				7:
-					editor.add_code_completion_option(CodeEdit.KIND_CLASS, label, add_text)
-				10:
-					editor.add_code_completion_option(CodeEdit.KIND_MEMBER, label, add_text)
-				13:
-					editor.add_code_completion_option(CodeEdit.KIND_ENUM, label, add_text)
-				17:
-					editor.add_code_completion_option(CodeEdit.KIND_FILE_PATH, label, add_text)
-				21:
-					editor.add_code_completion_option(CodeEdit.KIND_CONSTANT, label, add_text)
-				23:
-					editor.add_code_completion_option(CodeEdit.KIND_SIGNAL, label, add_text)
-				_:
-					editor.add_code_completion_option(CodeEdit.KIND_PLAIN_TEXT, label, add_text)
-					log_output("This type was uncategorized: %s %s" % [str(type), add_text])
-
-	editor.update_code_completion_options(true)
-
-
-func register_lsp_file(f_name: String, f_text: String):
-	var request_new_file = json_rpc.make_request(
-		"textDocument/didOpen", {
-				"textDocument": {
-					"uri": "file:///virtual/%s" % f_name,
-					"languageId": "gdscript",
-					"text": f_text
-				}
-			},
-		FILE_REGISTERED
-	)
-	make_request(request_new_file)
-
-
-func send_autocomplete_request() -> void:
-	if not DirAccess.dir_exists_absolute(temp_path):
-		return
-	var file_uid := str(current_virtual_script.get_instance_id())
-	var source := current_virtual_script.prepare_for_intellisence()
-	if is_stream_connected:
-		if not current_virtual_script.is_registered_to_lsp: # register a file.
-			register_lsp_file(file_uid, source)
-			current_virtual_script.is_registered_to_lsp = true
-		else: # Make changes to file.
-			var request_change = json_rpc.make_request(
-				"textDocument/didChange", {
-						"textDocument": {
-							"uri": "file:///virtual/%s" % file_uid,
-						},
-						"contentChanges": [
-							{ "text": source }
-						]
-					},
-				FILE_CHANGED
+			script_list.set_item_text(
+				idx,
+				current_virtual_script.name + "(%s)" % get_script_status(current_virtual_script)
 			)
-			make_request(request_change)
 
-		# Request Completion
-		var editor: CodeEdit = editors.get(current_virtual_script)
-		var request_completion = json_rpc.make_request(
-			"textDocument/completion", {
-					"textDocument": {
-						"uri": "file:///virtual/%s" % file_uid,
-					},
-					"position": {
-						"line": editor.get_caret_line(), "character": editor.get_caret_column()
-					}
-				},
-			COMPLETION_REQUESTED
-		)
-		make_request(request_completion)
-		var req_signature = json_rpc.make_request(
-			"textDocument/signatureHelp", {
-					"textDocument": {
-						"uri": "file:///virtual/%s" % file_uid,
-					},
-					"position": {
-						"line": editor.get_caret_line(), "character": editor.get_caret_column()
-					}
-				},
-			SIGNATURE_REQUESTED
-		)
-		make_request(req_signature)
+
+func _text_changed() -> void:
+	var editor: CodeEdit = editors.get(current_virtual_script)
+	if editor:
+		if diagnostics_label.visible:
+			diagnostics_label.visible = false
+			diagnostics_label.set_meta("type", Diagnostic.NONE)
+			for line in editor.get_line_count():
+				editor.set_line_background_color(line, Color(0, 0, 0, 0))
+			editor.show_signature("")
+
+		if current_virtual_script.source_code != editor.text:
+			current_virtual_script.source_code = editor.text
+			if not godot_lsp.is_active() and lsp_enabled:
+				if was_lsp_connected and was_lsp_closed_by_notification:
+					was_lsp_connected = false
+					was_lsp_closed_by_notification = false
+					lsp_enabled = true  # re-call the setter
+					return
+			godot_lsp.send_autocomplete_request(current_virtual_script, editor)
+
+
+func _on_diagnostic_timer_timeout(message: String, line: int) -> void:
+	# Clear last highlight
+	var editor: CodeEdit = editors.get(current_virtual_script)
+	if not editor:
+		return
+	for l in editor.get_line_count():
+		editor.set_line_background_color(l, Color(0, 0, 0, 0))
+	if line < 0 or line >= editor.get_line_count():
+		return
+	diagnostics_label.text = message
+	diagnostics_label.visible = true
+	var highlight := Color(0, 0, 0, 0)
+	match diagnostics_label.get_meta("type", Diagnostic.NONE):
+		Diagnostic.ERROR:
+			highlight = ERROR_COLOR
+			highlight.a = 0.1
+		Diagnostic.WARN:
+			highlight = WARN_COLOR
+			highlight.a = 0.1
+	editor.set_line_background_color(line, highlight)
+
+
+func _on_script_list_item_selected(index: int) -> void:
+	if index < virtual_scripts.size():
+		current_virtual_script = virtual_scripts[index]
+
+
+func _on_new_script_button_pressed() -> void:
+	create_virtual_script()
+
+
+func _on_delete_script_pressed() -> void:
+	remove_virtual_script(current_virtual_script)
+
+
+func _on_run_script_pressed() -> void:
+	save_data()
+	run_code(current_virtual_script)
+
+
+func _on_stop_script_pressed() -> void:
+	stop_script(current_virtual_script)
 
 
 func _on_file_browse_pressed() -> void:
@@ -718,7 +502,19 @@ func _on_file_browse_pressed() -> void:
 
 
 func _on_executable_chooser_file_selected(path: String) -> void:
-	if is_godot_present(path):
+	if GodotLSP.is_godot_present(path):
 		godot_path_edit.text = path
-		if not is_stream_connected:
-			try_connect_lsp()
+		if not godot_lsp.is_active() and lsp_enabled:
+			lsp_enabled = true  # re-call setter
+
+
+func _on_log_button_toggled(toggled_on: bool) -> void:
+	output_container.visible = toggled_on
+
+
+func _on_clear_log_pressed() -> void:
+	log_viewer.text = ""
+
+
+func _on_copy_log_pressed() -> void:
+	DisplayServer.clipboard_set(log_viewer.text)
