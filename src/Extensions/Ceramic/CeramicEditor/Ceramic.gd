@@ -44,6 +44,7 @@ var lsp_enabled := false:
 		else:
 			godot_lsp.disconnect_lsp_stream()
 
+var has_api_errors := false
 
 @onready var lsp_checkbox: CheckButton = %LSPEnabled  # LSP toggle
 @onready var activators: Node = %Activators  # parent thar hosts nodes for the scripts
@@ -178,6 +179,13 @@ func handle_signature(data: Dictionary):
 
 
 func handle_diagnostic(data: Dictionary):
+	# Give API errors priority
+	var api_errors := current_virtual_script.api_errors
+	if not api_errors.is_empty():
+		for error in api_errors:
+			throw_error(error, 0)
+		return
+
 	if data and not data.is_empty():
 		var uid := (data.get("uri") as String).get_file()
 		if str(current_virtual_script.get_instance_id()) != uid:
@@ -498,6 +506,9 @@ func _text_changed() -> void:
 					lsp_enabled = true  # re-call the setter
 					return
 				godot_lsp.send_autocomplete_request(current_virtual_script, editor)
+			else:
+				for error in current_virtual_script.api_errors:
+					throw_error(error, 0)
 
 
 func _on_diagnostic_timer_timeout(message: String, line: int) -> void:
@@ -541,6 +552,9 @@ func _on_run_script_pressed() -> void:
 
 
 func _on_stop_script_pressed() -> void:
+	# Save first (we don't know if it will crash on close or not)
+	current_virtual_script.was_running = false
+	save_data()
 	stop_script(current_virtual_script)
 
 

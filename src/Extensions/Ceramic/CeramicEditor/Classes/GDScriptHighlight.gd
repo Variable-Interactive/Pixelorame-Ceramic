@@ -6,6 +6,7 @@ const COMMENT_COLOR := Color("ffffff80")
 const FUNCTION_COLOR := Color("57b3ff")
 const FUNCTION_DEFINE_COLOR := Color("66e6ff")
 const KEYWORD_COLOR := Color("ff7085")
+const MEMBER_COLOR := Color("bce0ff")
 const STRING_COLOR := Color("ffeda1")
 const SYMBOL_COLOR := Color("abc9ff")
 const TEXT_COLOR := Color("ffffffbf")
@@ -79,8 +80,15 @@ const GDSCRIPT_TYPES := [
 	"Animation", "AnimationPlayer", "AnimationTree",
 	"AudioStream", "AudioStreamPlayer",
 
+	# Pixelorama
+	"ExtensionsApi", "Global", "DrawingAlgos", "Themes", "Tools", "Export", "OpenSave", "Import",
+	"Palettes", "ShaderImageEffect", "Canvas", "ValueSlider", "ValueSliderV2", "ValueSliderV3",
+	"DockableContainer", "Frame", "AnimationTag", "Tiles", "TileSetPanel", "BaseLayer",
+	"AudioLayer", "BaseCel", "PixelCel", "Guide", "SymmetryGuide", "Palette", "ReferenceImage",
+	"SelectionMap", "TileSetCustom", "ImageExtended",
+
 	# Misc
-	"ClassDB", "Image", "InputEvent", "SceneTree", "ExtensionsApi"
+	"ClassDB", "Image", "InputEvent", "SceneTree"
 ]
 
 func add_range(
@@ -134,7 +142,7 @@ func add_range(
 		i += 1
 	return
 
-func add_keyword(keyword: String, color: Color, line: String) -> Dictionary:
+func add_keyword(keyword: String, color: Color, line: String, group := 0) -> Dictionary:
 	var result: Dictionary = {}
 	var comment_index := line.find("#")
 	var regex := RegEx.new()
@@ -142,7 +150,7 @@ func add_keyword(keyword: String, color: Color, line: String) -> Dictionary:
 	if err != OK:
 		return result
 	for m in regex.search_all(line):
-		var start_index = m.get_start()
+		var start_index = m.get_start(group)
 		if comment_index != -1 and start_index > comment_index:
 			break
 		if start_index == -1:
@@ -227,7 +235,7 @@ func highlight_func_use(line: String, result: Dictionary):
 		}
 
 func _get_line_syntax_highlighting(line: int) -> Dictionary:
-	var result := {}  # Order of
+	var result := {}
 	var text := get_text_edit().get_line(line)
 
 	# Keywords etc...
@@ -238,8 +246,14 @@ func _get_line_syntax_highlighting(line: int) -> Dictionary:
 	for keyword in GDSCRIPT_TYPES:
 		result.merge(add_keyword("\\b" + keyword + "\\b", TYPE_COLOR, text), true)
 
+	# Members
+	result.merge(
+		add_keyword("\\.([A-Za-z_][A-Za-z0-9_]*)\\b(?!\\s*\\()", MEMBER_COLOR, text, 1), true
+	)
+
 	# Annotations
 	result.merge(add_keyword("@[A-Za-z_][A-Za-z0-9_]*", ANNOTATION_COLOR, text), true)
+
 
 	# Highlight function declaration
 	highlight_func_defs(text, result)
