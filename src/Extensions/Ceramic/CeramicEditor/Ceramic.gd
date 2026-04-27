@@ -36,6 +36,7 @@ var current_virtual_script: VirtualScript:
 
 var lsp_enabled := false:
 	set(value):
+		path_container.visible = lsp_enabled
 		for script in virtual_scripts:  # Reset script registeration
 			script.is_registered_to_lsp = false
 		lsp_enabled = value
@@ -63,6 +64,7 @@ var has_api_errors := false
 @onready var path_container: HBoxContainer = %PathContainer  # Container to godot path field
 
 func _ready() -> void:
+	%LogViewer.scroll_following = true
 	# LSP signals
 	add_child(godot_lsp)
 	non_lsp_validator.MessageBus.print_requested.connect(print_bus_message)
@@ -127,7 +129,6 @@ func _exit_tree() -> void:
 func _on_lsp_enabled_toggled(toggled_on: bool) -> void:
 	if lsp_enabled != toggled_on:
 		lsp_enabled = toggled_on
-	path_container.visible = toggled_on
 
 
 func _lsp_initialized() -> void:

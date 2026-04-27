@@ -44,4 +44,4 @@ func deserialize(data: Dictionary):
 
 
 func prepare_for_intellisence() -> String:
-	return source_code + "\n" + API.API_APPENDAGE
+	return source_code + "\n" + API.compile_api()
