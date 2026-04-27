@@ -34,11 +34,10 @@ var current_virtual_script: VirtualScript:
 		if script_info_bar:
 			script_info_bar.visible = (value != null)
 
-var was_lsp_connected := false
-var was_lsp_closed_by_notification := false
-
 var lsp_enabled := false:
 	set(value):
+		for script in virtual_scripts:  # Reset script registeration
+			script.is_registered_to_lsp = false
 		lsp_enabled = value
 		if value and not godot_lsp.is_active():
 			godot_lsp.try_connect_lsp()
@@ -74,6 +73,9 @@ func _ready() -> void:
 	extension_api = get_node_or_null("/root/ExtensionsApi")  # Accessing the Api
 	if extension_api:
 		extension_api.general.get_global().pixelorama_about_to_close.connect(_exit_tree)
+		extension_api.general.get_global().pixelorama_about_to_close.connect(
+			godot_lsp.disconnect_lsp_stream
+		)
 
 	var err := ceramic_data.load(CERAMIC_CONFIG_PATH)
 	if err == OK:
@@ -96,6 +98,7 @@ func _ready() -> void:
 func save_data() -> void:
 	ceramic_data.set_value("Ceramic", "data", serialize())
 	ceramic_data.set_value("Ceramic", "godot", godot_path_edit.text)
+	ceramic_data.set_value("Ceramic", "lsp_enabled", lsp_enabled)
 	ceramic_data.save(CERAMIC_CONFIG_PATH)
 
 
@@ -112,20 +115,9 @@ func deserialize(data: Dictionary):
 		create_virtual_script(script_data)
 
 
-func _notification(what):
-	match what:
-		NOTIFICATION_CRASH:
-			godot_lsp.disconnect_lsp_stream()
-			was_lsp_closed_by_notification = true
-		NOTIFICATION_WM_CLOSE_REQUEST:
-			was_lsp_closed_by_notification = true
-			godot_lsp.disconnect_lsp_stream()
-
-
 func _exit_tree() -> void:
 	if extension_api:
 		save_data()
-	godot_lsp.disconnect_lsp_stream()
 
 
 ## LSP Handler
@@ -138,7 +130,6 @@ func _on_lsp_enabled_toggled(toggled_on: bool) -> void:
 
 
 func _lsp_initialized() -> void:
-	was_lsp_connected = true
 	log_output("Initialization Successful, LSP is ready.")
 	godot_lsp.send_autocomplete_request(
 		current_virtual_script, editors.get(current_virtual_script)
@@ -502,13 +493,11 @@ func _text_changed() -> void:
 
 		if current_virtual_script.source_code != editor.text:
 			current_virtual_script.source_code = editor.text
-			if not godot_lsp.is_active() and lsp_enabled:
-				if was_lsp_connected and was_lsp_closed_by_notification:
-					was_lsp_connected = false
-					was_lsp_closed_by_notification = false
+			if lsp_enabled:
+				if not godot_lsp.is_active():
 					lsp_enabled = true  # re-call the setter
 					return
-			godot_lsp.send_autocomplete_request(current_virtual_script, editor)
+				godot_lsp.send_autocomplete_request(current_virtual_script, editor)
 
 
 func _on_diagnostic_timer_timeout(message: String, line: int) -> void:

@@ -154,12 +154,21 @@ func _enter_tree() -> void:
 	add_child(_packet_scan_timer)
 
 
+func _notification(what):
+	match what:
+		NOTIFICATION_CRASH:
+			disconnect_lsp_stream()
+		NOTIFICATION_WM_CLOSE_REQUEST:
+			disconnect_lsp_stream()
+
+
 func _scan_for_packets() -> void:
 	if not _stream:
 		return
 	var status = _stream.get_status()
 	match status:
 		StreamPeerTCP.STATUS_NONE:
+			disconnect_lsp_stream()
 			return
 		StreamPeerTCP.STATUS_ERROR:
 			if _godot_connect_attempt < CONNECTION_MAX_ATTEMPTS:
@@ -172,6 +181,7 @@ func _scan_for_packets() -> void:
 			# update our connection status (called only once)
 			if status == StreamPeerTCP.STATUS_CONNECTED and not _is_stream_connected:
 				_is_stream_connected = true
+				_godot_startup_timer.stop()
 				connected.emit()
 
 			if _stream.poll() == OK:  # We have reseaved something from LSP server
