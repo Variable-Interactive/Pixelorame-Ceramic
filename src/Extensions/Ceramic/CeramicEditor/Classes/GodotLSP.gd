@@ -5,8 +5,8 @@ extends Node
 const HOST := "127.0.0.1"
 ## This is the default values for godot editor settings.
 const PORT: int = 6005
+const GODOT_STARTUP_TIMEOUT := 1
 const PACKET_SCAN_INTERVAL := 0.3
-const GODOT_STARTUP_TIMEOUT := 0.5
 const CONNECTION_MAX_ATTEMPTS: int = 50
 
 enum {
@@ -22,6 +22,8 @@ signal connected()
 signal initialized()
 signal packet_received(packet:PackedByteArray)
 signal message(value: String)
+
+var godot_path: String
 
 var _temp_path := OS.get_temp_dir().path_join("ceramic_temp")
 var _stream: StreamPeerTCP
@@ -85,37 +87,22 @@ func is_active() -> bool:
 	return _stream or _is_stream_connected
 
 
-func try_connect_lsp(godot_path: String) -> void:
+func try_connect_lsp() -> void:
 	_is_stream_connected = false
 	if _stream:
 		disconnect_lsp_stream()
+	_godot_connect_attempt = 0
 	_packet_scan_timer.start()
-	connected.connect(_on_connected_to_lsp_server.bind(godot_path))
+	connected.connect(_on_connected_to_lsp_server)
 	packet_received.connect(_on_packet_recieved)
 
 	# Connect to LSP server
-	if is_godot_present(godot_path):
-		var args = OS.get_cmdline_user_args()
-		if "--child" in args:
-			return  # This is the headless/LSP instance so don't spawn again
-		_lsp_process = OS.create_process(
-			godot_path, [
-				"--headless",
-				DummyProject.create_project(_temp_path),
-				"++",
-				"--child"
-			]
-		)
-		if _lsp_process != -1:
-			message.emit("Godot starting, process id: %s" % str(_lsp_process))
-			_stream = StreamPeerTCP.new()
-			message.emit("Connecting to Host: %s, Port: %s" % [HOST, str(PORT)])
-			_godot_startup_timer.start()
-		else:
-			message.emit("Could not create TCP server...")
-	else:
-		message.emit("Godot not found at path, code suggestions can not be performed")
-		disconnect_lsp_stream()
+	message.emit("Listening to IP: %s through Port: %s" % [HOST, str(PORT)])
+	_stream = StreamPeerTCP.new()
+	_stream.connect_to_host(HOST, PORT)
+
+	message.emit("Searching for Godot instances...")
+	_godot_startup_timer.start()
 
 
 func send_autocomplete_request(script: VirtualScript, editor: CodeEdit) -> void:
@@ -154,7 +141,6 @@ func disconnect_lsp_stream() -> void:
 		message.emit("Killing stream at PID: %s" % str(_lsp_process))
 		OS.kill(_lsp_process)
 		_lsp_process = -1
-	_godot_connect_attempt = 0
 
 
 func _enter_tree() -> void:
@@ -206,13 +192,36 @@ func _scan_for_packets() -> void:
 
 
 func _on_godot_startup_timer_timeout() -> void:
+	if _godot_connect_attempt == 0:  # We were searching for existing godot instances.
+		if not _is_stream_connected:
+			message.emit("No existing instances found, attempting to create one...")
+			if is_godot_present(godot_path):
+				var args = OS.get_cmdline_user_args()
+				if "--child" in args:
+					return  # This is the headless/LSP instance so don't spawn again
+				_lsp_process = OS.create_process(
+					godot_path, [
+						"--headless",
+						DummyProject.create_project(_temp_path),
+						"++",
+						"--child"
+					]
+				)
+				if _lsp_process != -1:
+					message.emit("Godot starting, process id: %s" % str(_lsp_process))
+				else:
+					message.emit("Could not create TCP server...")
+			else:
+				message.emit("Godot not found at path, code suggestions can not be performed")
+				disconnect_lsp_stream()
+	else:
+		message.emit("Attempt --- %s" % str(_godot_connect_attempt))
+		_stream.disconnect_from_host()
+		_stream.connect_to_host(HOST, PORT)
 	_godot_connect_attempt += 1
-	message.emit("Attempt --- %s" % str(_godot_connect_attempt))
-	_stream.disconnect_from_host()
-	_stream.connect_to_host(HOST, PORT)
 
 
-func _on_connected_to_lsp_server(godot_path: String):
+func _on_connected_to_lsp_server():
 	var request = _json_rpc.make_request(
 		"initialize", {
 			"processId": null,
@@ -221,7 +230,7 @@ func _on_connected_to_lsp_server(godot_path: String):
 		},
 		INITIALIZATION
 	)
-	message.emit("CONNECTED to Server Initializing LSP...")
+	message.emit("CONNECTED to Server. Initializing LSP...")
 	_send_request(request)
 
 
@@ -243,6 +252,7 @@ func _register_lsp_file(f_name: String, f_text: String):
 		"textDocument/didOpen", {
 				"textDocument": {
 					"uri": "file:///virtual/%s" % f_name,
+					"version": 1,
 					"languageId": "gdscript",
 					"text": f_text
 				}

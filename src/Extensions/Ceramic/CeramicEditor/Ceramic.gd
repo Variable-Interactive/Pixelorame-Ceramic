@@ -41,7 +41,7 @@ var lsp_enabled := false:
 	set(value):
 		lsp_enabled = value
 		if value and not godot_lsp.is_active():
-			godot_lsp.try_connect_lsp(godot_path_edit.text)
+			godot_lsp.try_connect_lsp()
 		else:
 			godot_lsp.disconnect_lsp_stream()
 
@@ -83,6 +83,7 @@ func _ready() -> void:
 		lsp_enabled = ceramic_data.get_value("Ceramic", "lsp_enabled", lsp_enabled)
 		lsp_checkbox.set_pressed_no_signal(lsp_enabled)
 		if not godot_path.is_empty() and GodotLSP.is_godot_present(godot_path):
+			godot_lsp.godot_path = godot_path
 			godot_path_edit.text = godot_path
 		if data.is_empty():
 			create_virtual_script()
@@ -466,6 +467,7 @@ func log_output(text: String):
 ####### Signals
 func _on_godot_path_text_changed(file_path: String) -> void:
 	if lsp_enabled and GodotLSP.is_godot_present(file_path.strip_edges()):
+		godot_lsp.godot_path = file_path.strip_edges()
 		godot_path_edit.text = file_path.strip_edges()
 		lsp_enabled = true  # re-call setter
 

@@ -80,7 +80,7 @@ const GDSCRIPT_TYPES := [
 	"AudioStream", "AudioStreamPlayer",
 
 	# Misc
-	"Image", "InputEvent", "SceneTree", "ExtensionsApi"
+	"ClassDB", "Image", "InputEvent", "SceneTree", "ExtensionsApi"
 ]
 
 func add_range(
