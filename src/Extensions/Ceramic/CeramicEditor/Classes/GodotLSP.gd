@@ -106,8 +106,6 @@ func try_connect_lsp() -> void:
 
 
 func send_autocomplete_request(script: VirtualScript, editor: CodeEdit) -> void:
-	if not DirAccess.dir_exists_absolute(_temp_path):
-		return
 	var file_uid := str(script.get_instance_id())
 	var source := script.prepare_for_intellisence()
 	if _is_stream_connected:

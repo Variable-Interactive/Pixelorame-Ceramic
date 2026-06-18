@@ -36,7 +36,7 @@ var current_virtual_script: VirtualScript:
 
 var lsp_enabled := false:
 	set(value):
-		path_container.visible = lsp_enabled
+		path_container.visible = value
 		for script in virtual_scripts:  # Reset script registeration
 			script.is_registered_to_lsp = false
 		lsp_enabled = value
@@ -225,9 +225,9 @@ func populate_completion_list(lsp_auto_comp_data: Dictionary):
 	var editor: CodeEdit = editors.get(current_virtual_script)
 	for entry in lsp_auto_comp_data.get("result", []):
 		if typeof(entry) == TYPE_DICTIONARY:
-			var add_text = entry.get("insertText", "")
-			var label = entry.get("label", "")
-			var type = entry.get("kind", 0)
+			var add_text: String = entry.get("insertText", "")
+			var label: String = entry.get("label", "")
+			var type: int = entry.get("kind", 0)
 			match type:
 				1: # (Keywords e.g var, int etc.)
 					editor.add_code_completion_option(CodeEdit.KIND_MEMBER, label, add_text)
@@ -365,6 +365,7 @@ func stop_script(virtual_script: VirtualScript) -> bool:
 
 func run_code(virtual_script: VirtualScript) -> void:
 	var had_previous_instance = stop_script(virtual_script)
+	update_script_status(virtual_script)
 
 	if had_previous_instance:
 		# Wait for the previous script to be unloaded
@@ -379,6 +380,7 @@ func run_code(virtual_script: VirtualScript) -> void:
 		log_output(label)
 		return
 
+	# Do one more validation to check for infinite recursions
 	var script_id := virtual_script.get_instance_id()
 	var new_script := GDScript.new()
 	if not non_lsp_validator.validate_code(virtual_script.source_code, str(script_id)) == OK:
@@ -491,6 +493,9 @@ func _on_script_name_edit_text_changed(new_text: String) -> void:
 
 
 func _text_changed() -> void:
+	if current_virtual_script.was_running:
+		stop_script(current_virtual_script)
+		update_script_status(current_virtual_script)
 	var editor: CodeEdit = editors.get(current_virtual_script)
 	if editor:
 		if diagnostics_label.visible:
