@@ -365,7 +365,6 @@ func stop_script(virtual_script: VirtualScript) -> bool:
 
 func run_code(virtual_script: VirtualScript) -> void:
 	var had_previous_instance = stop_script(virtual_script)
-	update_script_status(virtual_script)
 
 	if had_previous_instance:
 		# Wait for the previous script to be unloaded
@@ -553,8 +552,12 @@ func _on_delete_script_pressed() -> void:
 
 
 func _on_run_script_pressed() -> void:
+	# save the script status as non-running (so if it crashes, we can still change code on restart)
+	current_virtual_script.was_running = false
+	save_data()
+	# attempt to run the code
 	run_code(current_virtual_script)
-	save_data()  # Save AFTER making sure the script runs
+	save_data()  # Save again after making sure the script runs
 
 
 func _on_stop_script_pressed() -> void:
