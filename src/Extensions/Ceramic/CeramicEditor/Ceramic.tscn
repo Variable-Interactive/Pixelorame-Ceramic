@@ -18,7 +18,7 @@ script = ExtResource("1_sniaa")
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=849765823]
 layout_mode = 2
 
-[node name="GodotBar" type="HBoxContainer" parent="VBoxContainer" unique_id=1422330662]
+[node name="GodotBar" type="HBoxContainer" parent="VBoxContainer" unique_id=1422330662 groups=["HideInCompact"]]
 layout_mode = 2
 
 [node name="LSPEnabled" type="CheckButton" parent="VBoxContainer/GodotBar" unique_id=465903464]
@@ -69,7 +69,7 @@ texture = ExtResource("2_sniaa")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="HSeparator" type="HSeparator" parent="VBoxContainer" unique_id=1132037077]
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer" unique_id=1132037077 groups=["HideInCompact"]]
 layout_mode = 2
 
 [node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer" unique_id=965524034]
@@ -81,7 +81,7 @@ split_offset = 130
 [node name="ScriptTabs" type="VBoxContainer" parent="VBoxContainer/HSplitContainer" unique_id=1631654159]
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/ScriptTabs" unique_id=1164006299]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/ScriptTabs" unique_id=1164006299 groups=["HideInCompact"]]
 layout_mode = 2
 
 [node name="Label" type="Label" parent="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer" unique_id=1986065594]
@@ -100,6 +100,13 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
+[node name="CompactMode" type="CheckBox" parent="VBoxContainer/HSplitContainer/ScriptTabs" unique_id=1705995462]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Used when you have a script ready to play
+and don't want the Editor to take unnesessary space."
+text = "Compact view"
+
 [node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer" unique_id=1534329865]
 layout_mode = 2
 
@@ -117,17 +124,17 @@ texture_filter = 1
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="NameLabel" type="Label" parent="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=966679491]
+[node name="NameLabel" type="Label" parent="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=966679491 groups=["HideInCompact"]]
 layout_mode = 2
 text = "Name:"
 
-[node name="ScriptNameEdit" type="LineEdit" parent="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=598100185]
+[node name="ScriptNameEdit" type="LineEdit" parent="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=598100185 groups=["HideInCompact"]]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 placeholder_text = "Script Name"
 
-[node name="DeleteScript" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=1588536273]
+[node name="DeleteScript" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar" unique_id=1588536273 groups=["HideInCompact"]]
 layout_mode = 2
 text = "Delete Script"
 
@@ -187,7 +194,7 @@ stretch_mode = 5
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer" unique_id=422031320]
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer" unique_id=422031320 groups=["HideInCompact"]]
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -285,6 +292,7 @@ one_shot = true
 [connection signal="pressed" from="VBoxContainer/GodotBar/PathContainer/FileBrowse" to="." method="_on_file_browse_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer/NewScriptButton" to="." method="_on_new_script_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/HSplitContainer/ScriptTabs/ScriptList" to="." method="_on_script_list_item_selected"]
+[connection signal="toggled" from="VBoxContainer/HSplitContainer/ScriptTabs/CompactMode" to="." method="_on_compact_mode_toggled"]
 [connection signal="text_changed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar/ScriptNameEdit" to="." method="_on_script_name_edit_text_changed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar/DeleteScript" to="." method="_on_delete_script_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/RunScript" to="." method="_on_run_script_pressed"]

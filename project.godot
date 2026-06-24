@@ -21,6 +21,10 @@ run/main_scene="uid://pp5t8m4vqvbm"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.png"
 
+[global_group]
+
+HideInCompact=""
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

@@ -62,6 +62,7 @@ var has_api_errors := false
 @onready var extension_api: Node  ## A variable for easy reference to the Api
 @onready var script_info_bar: HBoxContainer = %ScriptInfoBar  # Container for name and status of script.
 @onready var path_container: HBoxContainer = %PathContainer  # Container to godot path field
+@onready var compact_mode: CheckBox = %CompactMode
 
 func _ready() -> void:
 	%LogViewer.scroll_following = true
@@ -84,6 +85,7 @@ func _ready() -> void:
 	if err == OK:
 		#var config: ConfigFile = extension_api.general.get_config_file()
 		var data: Dictionary = ceramic_data.get_value("Ceramic", "data", {})
+		compact_mode.button_pressed = ceramic_data.get_value("Ceramic", "compact_mode", false)
 		var godot_path: String = ceramic_data.get_value("Ceramic", "godot", "")
 		lsp_enabled = ceramic_data.get_value("Ceramic", "lsp_enabled", lsp_enabled)
 		lsp_checkbox.set_pressed_no_signal(lsp_enabled)
@@ -100,6 +102,7 @@ func _ready() -> void:
 
 func save_data() -> void:
 	ceramic_data.set_value("Ceramic", "data", serialize())
+	ceramic_data.set_value("Ceramic", "compact_mode", compact_mode.button_pressed)
 	ceramic_data.set_value("Ceramic", "godot", godot_path_edit.text)
 	ceramic_data.set_value("Ceramic", "lsp_enabled", lsp_enabled)
 	ceramic_data.save(CERAMIC_CONFIG_PATH)
@@ -593,3 +596,8 @@ func _on_clear_log_pressed() -> void:
 
 func _on_copy_log_pressed() -> void:
 	DisplayServer.clipboard_set(log_viewer.text)
+
+
+func _on_compact_mode_toggled(toggled_on: bool) -> void:
+	for nodes: Control in get_tree().get_nodes_in_group("HideInCompact"):
+		nodes.visible = not toggled_on
