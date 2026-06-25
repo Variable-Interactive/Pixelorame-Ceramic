@@ -69,11 +69,6 @@ texture = ExtResource("2_sniaa")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="APIHelp" type="Button" parent="VBoxContainer/GodotBar" unique_id=189559236]
-layout_mode = 2
-size_flags_horizontal = 10
-text = "Open API Docs"
-
 [node name="HSeparator" type="HSeparator" parent="VBoxContainer" unique_id=1132037077 groups=["HideInCompact"]]
 layout_mode = 2
 
@@ -258,15 +253,25 @@ layout_mode = 2
 [node name="HSeparator" type="HSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=256413398]
 layout_mode = 2
 
-[node name="BottomBar" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=1227358673]
+[node name="BottomBar" type="ScrollContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=889455857]
 layout_mode = 2
-alignment = 2
+vertical_scroll_mode = 0
 
-[node name="LogButton" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar" unique_id=1056052359]
+[node name="Buttons" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar" unique_id=1227358673]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LogButton" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons" unique_id=1056052359]
 layout_mode = 2
 toggle_mode = true
 button_pressed = true
-text = "Hide Output"
+text = "Output"
+flat = true
+
+[node name="APIHelp" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons" unique_id=189559236]
+layout_mode = 2
+text = "API Docs"
+flat = true
 
 [node name="Activators" type="Node" parent="." unique_id=1396606233]
 unique_name_in_owner = true
@@ -295,7 +300,6 @@ one_shot = true
 [connection signal="toggled" from="VBoxContainer/GodotBar/LSPEnabled" to="." method="_on_lsp_enabled_toggled"]
 [connection signal="text_changed" from="VBoxContainer/GodotBar/PathContainer/GodotPath" to="." method="_on_godot_path_text_changed"]
 [connection signal="pressed" from="VBoxContainer/GodotBar/PathContainer/FileBrowse" to="." method="_on_file_browse_pressed"]
-[connection signal="pressed" from="VBoxContainer/GodotBar/APIHelp" to="." method="_on_api_help_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer/NewScriptButton" to="." method="_on_new_script_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/HSplitContainer/ScriptTabs/ScriptList" to="." method="_on_script_list_item_selected"]
 [connection signal="toggled" from="VBoxContainer/HSplitContainer/ScriptTabs/CompactMode" to="." method="_on_compact_mode_toggled"]
@@ -305,5 +309,6 @@ one_shot = true
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/StopScript" to="." method="_on_stop_script_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons/ClearLog" to="." method="_on_clear_log_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons/CopyLog" to="." method="_on_copy_log_pressed"]
-[connection signal="toggled" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/LogButton" to="." method="_on_log_button_toggled"]
+[connection signal="toggled" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons/LogButton" to="." method="_on_log_button_toggled"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons/APIHelp" to="." method="_on_api_help_pressed"]
 [connection signal="file_selected" from="CeramicDialogs/ExecutableChooser" to="." method="_on_executable_chooser_file_selected"]
