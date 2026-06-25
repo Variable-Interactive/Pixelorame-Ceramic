@@ -601,3 +601,7 @@ func _on_copy_log_pressed() -> void:
 func _on_compact_mode_toggled(toggled_on: bool) -> void:
 	for nodes: Control in get_tree().get_nodes_in_group("HideInCompact"):
 		nodes.visible = not toggled_on
+
+
+func _on_api_help_pressed() -> void:
+	OS.shell_open("https://pixelorama.org/extension_system/extension_api")

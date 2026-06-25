@@ -69,6 +69,11 @@ texture = ExtResource("2_sniaa")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="APIHelp" type="Button" parent="VBoxContainer/GodotBar" unique_id=189559236]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Open API Docs"
+
 [node name="HSeparator" type="HSeparator" parent="VBoxContainer" unique_id=1132037077 groups=["HideInCompact"]]
 layout_mode = 2
 
@@ -290,6 +295,7 @@ one_shot = true
 [connection signal="toggled" from="VBoxContainer/GodotBar/LSPEnabled" to="." method="_on_lsp_enabled_toggled"]
 [connection signal="text_changed" from="VBoxContainer/GodotBar/PathContainer/GodotPath" to="." method="_on_godot_path_text_changed"]
 [connection signal="pressed" from="VBoxContainer/GodotBar/PathContainer/FileBrowse" to="." method="_on_file_browse_pressed"]
+[connection signal="pressed" from="VBoxContainer/GodotBar/APIHelp" to="." method="_on_api_help_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/ScriptTabs/HBoxContainer/NewScriptButton" to="." method="_on_new_script_button_pressed"]
 [connection signal="item_selected" from="VBoxContainer/HSplitContainer/ScriptTabs/ScriptList" to="." method="_on_script_list_item_selected"]
 [connection signal="toggled" from="VBoxContainer/HSplitContainer/ScriptTabs/CompactMode" to="." method="_on_compact_mode_toggled"]
