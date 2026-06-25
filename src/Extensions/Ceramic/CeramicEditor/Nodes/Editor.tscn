@@ -12,6 +12,7 @@ size_flags_vertical = 3
 caret_blink = true
 draw_tabs = true
 gutters_draw_line_numbers = true
+delimiter_strings = Array[String]([])
 code_completion_enabled = true
 indent_automatic = true
 auto_brace_completion_enabled = true
