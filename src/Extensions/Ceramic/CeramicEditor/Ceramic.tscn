@@ -214,41 +214,73 @@ fit_content = true
 [node name="HSeparator" type="HSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/VBoxContainer" unique_id=885712502]
 layout_mode = 2
 
-[node name="Output" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer" unique_id=1628876127]
-unique_name_in_owner = true
+[node name="BottomPanels" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer" unique_id=1356929433]
 layout_mode = 2
 
-[node name="LogViewer" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=653541280]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels" unique_id=1073488148]
+layout_mode = 2
+
+[node name="Output" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer" unique_id=1628876127]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="LogViewer" type="RichTextLabel" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output" unique_id=653541280]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 bbcode_enabled = true
 
-[node name="VSeparator" type="VSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=119596008]
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output" unique_id=119596008]
 layout_mode = 2
 
-[node name="LogButtons" type="GridContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=1071723266]
+[node name="LogButtons" type="GridContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output" unique_id=1071723266]
 texture_filter = 1
 layout_mode = 2
 columns = 2
 
-[node name="ClearLog" type="TextureButton" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons" unique_id=284808276]
+[node name="ClearLog" type="TextureButton" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output/LogButtons" unique_id=284808276]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 tooltip_text = "Clear Log"
 texture_normal = ExtResource("3_1fqd4")
 stretch_mode = 5
 
-[node name="CopyLog" type="TextureButton" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons" unique_id=1486174987]
+[node name="CopyLog" type="TextureButton" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output/LogButtons" unique_id=1486174987]
 custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
 tooltip_text = "Copy Log"
 texture_normal = ExtResource("4_yr72p")
 stretch_mode = 5
 
-[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output" unique_id=135731652]
+[node name="VSeparator2" type="VSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output" unique_id=135731652]
 layout_mode = 2
+
+[node name="InspectorScroll" type="ScrollContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer" unique_id=1353517202]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="ElementsContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/InspectorScroll" unique_id=344093843 groups=["ElementsContainer"]]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/InspectorScroll/ElementsContainer" unique_id=1695156716]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/InspectorScroll/ElementsContainer/HBoxContainer" unique_id=582390186]
+layout_mode = 2
+theme_type_variation = &"HeaderSmall"
+text = "Inspector"
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/InspectorScroll/ElementsContainer/HBoxContainer" unique_id=1363368958]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="HSeparator" type="HSeparator" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=256413398]
 layout_mode = 2
@@ -271,6 +303,12 @@ flat = true
 [node name="APIHelp" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons" unique_id=189559236]
 layout_mode = 2
 text = "API Docs"
+flat = true
+
+[node name="InspectorButton" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons" unique_id=2046334127]
+layout_mode = 2
+toggle_mode = true
+text = "Inspector"
 flat = true
 
 [node name="Activators" type="Node" parent="." unique_id=1396606233]
@@ -307,8 +345,9 @@ one_shot = true
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/ScrollContainer/ScriptInfoBar/DeleteScript" to="." method="_on_delete_script_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/RunScript" to="." method="_on_run_script_pressed"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/HBoxContainer/StopScript" to="." method="_on_stop_script_pressed"]
-[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons/ClearLog" to="." method="_on_clear_log_pressed"]
-[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/Output/LogButtons/CopyLog" to="." method="_on_copy_log_pressed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output/LogButtons/ClearLog" to="." method="_on_clear_log_pressed"]
+[connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer/Output/LogButtons/CopyLog" to="." method="_on_copy_log_pressed"]
 [connection signal="toggled" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons/LogButton" to="." method="_on_log_button_toggled"]
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons/APIHelp" to="." method="_on_api_help_pressed"]
+[connection signal="toggled" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons/InspectorButton" to="." method="_on_inspector_button_toggled"]
 [connection signal="file_selected" from="CeramicDialogs/ExecutableChooser" to="." method="_on_executable_chooser_file_selected"]

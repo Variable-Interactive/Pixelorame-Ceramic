@@ -56,6 +56,7 @@ var has_api_errors := false
 @onready var godot_path_edit: LineEdit = %GodotPath  # Godot path field
 @onready var editor_container: VBoxContainer = %EditorContainer  # Host container of the editor CodeEdit nodes.
 @onready var output_container: HBoxContainer = %Output  # Container of the output console.
+@onready var inspector_panel: ScrollContainer = %InspectorScroll
 @onready var status_info: Label = %StatusInfo  # Shows current starus of script (Running/stopped)
 @onready var diagnostic_timer: Timer = %DiagnosticTimer  # Used to wait for text to stop for displaying diagnostic.
 @onready var executable_chooser: FileDialog = %ExecutableChooser
@@ -385,10 +386,11 @@ func run_code(virtual_script: VirtualScript) -> void:
 	# Do one more validation to check for infinite recursions
 	var script_id := virtual_script.get_instance_id()
 	var new_script := GDScript.new()
-	if not non_lsp_validator.validate_code(virtual_script.source_code, str(script_id)) == OK:
+	var script_source := virtual_script.prepare_for_running()
+	if not non_lsp_validator.validate_code(script_source, str(script_id)) == OK:
 		return
 	new_script.source_code = non_lsp_validator.add_guards(
-		virtual_script.source_code, str(script_id)
+		script_source, str(script_id)
 	)
 
 	var error_code := new_script.reload()
@@ -590,14 +592,6 @@ func _on_log_button_toggled(toggled_on: bool) -> void:
 	output_container.visible = toggled_on
 
 
-func _on_clear_log_pressed() -> void:
-	log_viewer.text = ""
-
-
-func _on_copy_log_pressed() -> void:
-	DisplayServer.clipboard_set(log_viewer.text)
-
-
 func _on_compact_mode_toggled(toggled_on: bool) -> void:
 	for nodes: Control in get_tree().get_nodes_in_group("HideInCompact"):
 		nodes.visible = not toggled_on
@@ -605,3 +599,15 @@ func _on_compact_mode_toggled(toggled_on: bool) -> void:
 
 func _on_api_help_pressed() -> void:
 	OS.shell_open("https://pixelorama.org/extension_system/extension_api")
+
+
+func _on_inspector_button_toggled(toggled_on: bool) -> void:
+	inspector_panel.visible = toggled_on
+
+
+func _on_clear_log_pressed() -> void:
+	log_viewer.text = ""
+
+
+func _on_copy_log_pressed() -> void:
+	DisplayServer.clipboard_set(log_viewer.text)
