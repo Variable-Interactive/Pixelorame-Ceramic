@@ -320,13 +320,13 @@ func ensure_editor_exists(virtual_script: VirtualScript):
 
 func remove_virtual_script(virtual_script: VirtualScript):
 	stop_script(virtual_script)
-	var old_idx = virtual_scripts.find(virtual_script)
+	var old_idx := virtual_scripts.find(virtual_script)
 	virtual_scripts.erase(virtual_script)
 	var editor: CodeEdit = editors.get(virtual_script, null)
 	if editor:
 		editors.erase(virtual_script)
 		editor.queue_free()
-	old_idx = min(old_idx, 0, virtual_scripts.size() - 1)
+	old_idx = clampi(old_idx, 0, virtual_scripts.size() - 1)
 	if old_idx >= 0:
 		current_virtual_script = virtual_scripts[old_idx]
 	else:
