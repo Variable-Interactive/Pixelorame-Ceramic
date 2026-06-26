@@ -5,6 +5,8 @@ const _ceramic_button_header := """
 ## Ceramic Specific feature:
 ## Adds a control element in the Inspector tab of the Ceramic editor (when the script is run).
 ## The added elements are auto removed when the script is stopped.
+## [br]
+## NOTE: The elements will be added to an HFlowContainer
 func add_inspector_item(control: Control) -> void:
 """
 const _ceramic_button_code := """
@@ -12,7 +14,6 @@ var _inspector_element_holder_node: HFlowContainer
 func add_inspector_item(script_name: String, node: Node, button: Control) -> void:
 	if not _inspector_element_holder_node:
 		var _sections_container := get_tree().get_first_node_in_group("ElementsContainer")
-		print(_sections_container)
 		var _new_section := VBoxContainer.new()
 		node.tree_exiting.connect(_new_section.queue_free)
 		var title := Label.new()
@@ -41,7 +42,15 @@ func _enter_tree() -> void:
 	# See https://pixelorama.org/extension_system/extension_api for the API docs.
 	# or https://pixelorama.org/extension_system/extension_examples for Examples.
 
+	# Examples:
+	# 1. print version of API
 	print(ExtensionsApi.get_api_version())
+
+	# 2. Add a button to inspector that prints something when pressed
+	var button := Button.new()
+	button.text = "Hello"
+	button.pressed.connect(func(): print("Hello world"))
+	add_inspector_item(button)
 
 
 func _exit_tree() -> void:  # Extension is being uninstalled or disabled
@@ -85,5 +94,4 @@ func prepare_for_running() -> String:
 			search, "add_inspector_item(\"%s\", self," % name.replace("\"", "")
 		)
 		search = result.find("add_inspector_item", search + 1)
-	print()
 	return result + "\n" + _ceramic_button_code

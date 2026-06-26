@@ -219,6 +219,7 @@ layout_mode = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels" unique_id=1073488148]
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="Output" type="HBoxContainer" parent="VBoxContainer/HSplitContainer/VBoxContainer/VSplitContainer/BottomPanels/HBoxContainer" unique_id=1628876127]
 unique_name_in_owner = true
