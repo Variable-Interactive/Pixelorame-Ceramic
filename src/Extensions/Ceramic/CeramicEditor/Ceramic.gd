@@ -403,6 +403,7 @@ func run_code(virtual_script: VirtualScript) -> void:
 	var instance: Node = ClassDB.instantiate(new_script.get_instance_base_type())
 	instance.name = str(script_id)
 	instance.set_script(new_script)
+	instance.tree_exited.connect(stop_script.bind(virtual_script))
 	instance.add_to_group(ACTIVATOR_GROUP)
 	activators.add_child(instance)
 	update_script_status(virtual_script)
