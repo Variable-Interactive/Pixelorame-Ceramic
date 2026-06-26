@@ -336,6 +336,14 @@ unique_name_in_owner = true
 wait_time = 0.3
 one_shot = true
 
+[node name="DeletionConfirm" type="ConfirmationDialog" parent="." unique_id=1756984565]
+unique_name_in_owner = true
+oversampling_override = 1.0
+size = Vector2i(351, 106)
+ok_button_text = "Delete it"
+dialog_text = "Deleting a script can not be un-done.
+Are you sure you want to delete it?"
+
 [connection signal="toggled" from="VBoxContainer/GodotBar/LSPEnabled" to="." method="_on_lsp_enabled_toggled"]
 [connection signal="text_changed" from="VBoxContainer/GodotBar/PathContainer/GodotPath" to="." method="_on_godot_path_text_changed"]
 [connection signal="pressed" from="VBoxContainer/GodotBar/PathContainer/FileBrowse" to="." method="_on_file_browse_pressed"]
@@ -352,3 +360,4 @@ one_shot = true
 [connection signal="pressed" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons/APIHelp" to="." method="_on_api_help_pressed"]
 [connection signal="toggled" from="VBoxContainer/HSplitContainer/VBoxContainer/BottomBar/Buttons/InspectorButton" to="." method="_on_inspector_button_toggled"]
 [connection signal="file_selected" from="CeramicDialogs/ExecutableChooser" to="." method="_on_executable_chooser_file_selected"]
+[connection signal="confirmed" from="DeletionConfirm" to="." method="_on_deletion_confirm_confirmed"]

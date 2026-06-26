@@ -554,6 +554,10 @@ func _on_new_script_button_pressed() -> void:
 
 
 func _on_delete_script_pressed() -> void:
+	%DeletionConfirm.popup_centered()
+
+
+func _on_deletion_confirm_confirmed() -> void:
 	remove_virtual_script(current_virtual_script)
 
 
