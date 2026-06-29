@@ -11,7 +11,7 @@ var ExtensionsApi: ExtensionsApiClass = ExtensionsApiClass.new()
 class ExtensionsApiClass:
 	extends Node
 
-	## The Official ExtensionsAPI for pixelorama.
+	## The Official ExtensionsAPI for pixelorama (commit d2e985b35984dd6e714cb9e2fb6398a5637fe2bf).
 	##
 	## This Api gives you the essentials to develop a working extension for Pixelorama.[br]
 	## The Api consists of many smaller Apis, each giving access to different areas of the Software.
@@ -453,6 +453,15 @@ class ExtensionsApiClass:
 		func remove_import_option(id: int) -> void:
 			return
 
+		## Adds a callback function for opening files with custom extensions. Whenever a file with the
+		## given extension is opened, the given callback will be called with the file path as argument.
+		func add_open_callback(extension: String, callback: Callable) -> void:
+			return
+
+		## Removes the callback function for the given extension.
+		func remove_open_callback(extension: String) -> void:
+			return
+
 
 	## Gives access to palette related stuff.
 	class PaletteAPI:
@@ -520,6 +529,11 @@ class ExtensionsApiClass:
 
 		## Connects/disconnects a signal to [param callable], that emits
 		## whenever you switch to some other project.
+		func signal_project_about_to_switch(callable: Callable, is_disconnecting := false) -> void:
+			return
+
+		## Connects/disconnects a signal to [param callable], that emits
+		## whenever you switch to some other project.
 		func signal_project_switched(callable: Callable, is_disconnecting := false) -> void:
 			return
 
@@ -555,8 +569,23 @@ class ExtensionsApiClass:
 			return
 
 		# UPDATER SIGNALS
+		## Connects/disconnects a signal of name [param updater] from the [Project] class to
+		## [param callable], and always make sure that it emits from the current project.
+		func current_project_signal(
+			callable: Callable, updater: StringName, is_disconnecting := false
+		) -> void:
+			return
+
+		## Connects/disconnects a signal of name [param updater] from the [BaseCel] class to
+		## [param callable], and always make sure that it emits from the current project's current cel.
+		func current_cel_signal(
+			callable: Callable, updater: StringName, is_disconnecting := false
+		) -> void:
+			return
+
 		## Connects/disconnects a signal to [param callable], that emits
-		## whenever texture of the currently focused cel changes.
+		## whenever texture of the currently focused cel changes.[br] This has been deprecated. Use
+		## current_cel_signal() instead.
 		func signal_current_cel_texture_changed(callable: Callable, is_disconnecting := false) -> void:
 			return
 
