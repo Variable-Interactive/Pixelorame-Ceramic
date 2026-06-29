@@ -6,5 +6,5 @@
 "name": "Ceramic",
 "nodes": ["Main.tscn"],
 "supported_api_versions": [8],
-"version": "0.2"
+"version": "0.3"
 }
