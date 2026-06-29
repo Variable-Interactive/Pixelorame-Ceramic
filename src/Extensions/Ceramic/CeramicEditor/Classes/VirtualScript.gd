@@ -8,6 +8,7 @@ const _ceramic_button_header := """
 ## [br]
 ## NOTE: The elements will be added to an HFlowContainer
 func add_inspector_item(control: Control) -> void:
+	pass
 """
 const _ceramic_button_code := """
 var _inspector_element_holder_node: HFlowContainer
@@ -77,7 +78,7 @@ func deserialize(data: Dictionary):
 
 
 func prepare_for_intellisence() -> String:
-	return source_code+ "\n" + _ceramic_button_header + "\n" + API.compile_api()
+	return source_code + _ceramic_button_header + API.compile_api()
 
 
 func prepare_for_running() -> String:
@@ -94,4 +95,4 @@ func prepare_for_running() -> String:
 			search, "add_inspector_item(\"%s\", self," % name.replace("\"", "")
 		)
 		search = result.find("add_inspector_item", search + 1)
-	return result + "\n" + _ceramic_button_code
+	return result + _ceramic_button_code

@@ -217,7 +217,6 @@ func handle_diagnostic(data: Dictionary):
 						continue
 					last_warn = diag.get("message", 0)
 					warn_line = warn_line
-
 		if not last_err.strip_edges().is_empty():
 			throw_error(last_err, err_line)
 
